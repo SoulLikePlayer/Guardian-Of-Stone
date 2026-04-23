@@ -1,6 +1,7 @@
 package net.guardian_of_stone.event;
 
 import net.guardian_of_stone.core.GuardianOfStone;
+import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
 import net.guardian_of_stone.world.entitites.ModEntities;
 import net.minecraft.world.entity.monster.creaking.Creaking;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -12,6 +13,6 @@ public class MobAttributes {
 
     @SubscribeEvent
     public static void createDefaultAttributes(EntityAttributeCreationEvent event){
-        event.put(ModEntities.GUARDIAN_OF_STONE.get(), Creaking.createAttributes().build());
+        event.put(ModEntities.GUARDIAN_OF_STONE.get(), GuardianOfStoneEntity.createAttributes().build());
     }
 }

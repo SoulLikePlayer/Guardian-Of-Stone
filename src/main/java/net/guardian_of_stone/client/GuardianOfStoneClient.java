@@ -1,9 +1,8 @@
 package net.guardian_of_stone.client;
 
-import net.guardian_of_stone.client.renderer.GuardianOfStoneEntityRenderer;
+import net.guardian_of_stone.client.renderer.entity.GuardianOfStoneEntityRenderer;
 import net.guardian_of_stone.core.GuardianOfStone;
 import net.guardian_of_stone.world.entitites.ModEntities;
-import net.minecraft.client.renderer.entity.CreakingRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
