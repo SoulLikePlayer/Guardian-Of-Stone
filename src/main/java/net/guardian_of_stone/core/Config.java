@@ -1,4 +1,4 @@
-package net.gardian_of_stone.core;
+package net.guardian_of_stone.core;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 

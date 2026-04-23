@@ -1,5 +1,6 @@
-package net.gardian_of_stone.core;
+package net.guardian_of_stone.core;
 
+import net.guardian_of_stone.world.entitites.ModEntities;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -9,12 +10,14 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.ModContainer;
 
-@Mod(GardianOfStone.MODID)
-public class GardianOfStone {
-    public static final String MODID = "gardian_of_stone";
+@Mod(GuardianOfStone.MODID)
+public class GuardianOfStone {
+    public static final String MODID = "guardian_of_stone";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public GardianOfStone(IEventBus modEventBus, ModContainer modContainer) {
+    public GuardianOfStone(IEventBus modEventBus, ModContainer modContainer) {
+        ModEntities.ENTITY_TYPES.register(modEventBus);
+
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 }
