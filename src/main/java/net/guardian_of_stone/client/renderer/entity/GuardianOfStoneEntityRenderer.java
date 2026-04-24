@@ -1,7 +1,9 @@
 package net.guardian_of_stone.client.renderer.entity;
 
+import net.guardian_of_stone.client.GuardianOfStoneClient;
 import net.guardian_of_stone.client.model.entity.GuardianOfStoneModel;
 import net.guardian_of_stone.client.renderer.entity.state.GuardianOfStoneEntityRenderState;
+import net.guardian_of_stone.core.GuardianOfStone;
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -13,10 +15,10 @@ public class GuardianOfStoneEntityRenderer<T extends GuardianOfStoneEntity>
         extends MobRenderer<@NotNull T, @NotNull GuardianOfStoneEntityRenderState, @NotNull GuardianOfStoneModel> {
 
     private static final Identifier TEXTURE_LOCATION =
-            Identifier.withDefaultNamespace("textures/entity/creaking/creaking.png");
+            Identifier.fromNamespaceAndPath(GuardianOfStone.MODID, "textures/entity/guardian_of_stone/guardian_of_stone.png");
 
     public GuardianOfStoneEntityRenderer(EntityRendererProvider.Context context) {
-        super(context, new GuardianOfStoneModel(context.bakeLayer(ModelLayers.CREAKING)), 0.6F);
+        super(context, new GuardianOfStoneModel(context.bakeLayer(GuardianOfStoneClient.GUARDIAN_OF_STONE_LAYER)), 0.6F);
     }
 
     @Override
