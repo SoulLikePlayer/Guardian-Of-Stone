@@ -14,8 +14,11 @@ import org.jetbrains.annotations.NotNull;
 public class GuardianOfStoneEntityRenderer<T extends GuardianOfStoneEntity>
         extends MobRenderer<@NotNull T, @NotNull GuardianOfStoneEntityRenderState, @NotNull GuardianOfStoneModel> {
 
-    private static final Identifier TEXTURE_LOCATION =
-            Identifier.fromNamespaceAndPath(GuardianOfStone.MODID, "textures/entity/guardian_of_stone/guardian_of_stone.png");
+    private static final Identifier TEXTURE_ACTIVE =
+            Identifier.fromNamespaceAndPath(GuardianOfStone.MODID, "textures/entity/guardian_of_stone/guardian_of_stone_active.png");
+
+    private static final Identifier TEXTURE_INACTIVE =
+            Identifier.fromNamespaceAndPath(GuardianOfStone.MODID, "textures/entity/guardian_of_stone/guardian_of_stone_inactive.png");
 
     public GuardianOfStoneEntityRenderer(EntityRendererProvider.Context context) {
         super(context, new GuardianOfStoneModel(context.bakeLayer(GuardianOfStoneClient.GUARDIAN_OF_STONE_LAYER)), 0.6F);
@@ -33,7 +36,7 @@ public class GuardianOfStoneEntityRenderer<T extends GuardianOfStoneEntity>
 
     @Override
     public @NotNull Identifier getTextureLocation(@NotNull GuardianOfStoneEntityRenderState state) {
-        return TEXTURE_LOCATION;
+        return state.canMove ? TEXTURE_ACTIVE : TEXTURE_INACTIVE;
     }
 
     @Override

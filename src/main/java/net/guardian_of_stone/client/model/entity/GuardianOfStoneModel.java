@@ -48,37 +48,37 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneEn
 
         upperBody.addOrReplaceChild("head",
                 CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-2.0F, -10.0F, -3.0F, 6.0F, 10.0F, 6.0F),
+                        .texOffs(0, 19).addBox(-2.0F, -10.0F, -3.0F, 6.0F, 10.0F, 6.0F),
                 PartPose.offset(-4.0F, -11.0F, 0.0F));
 
         upperBody.addOrReplaceChild("body",
                 CubeListBuilder.create()
-                        .texOffs(28, 33).addBox( 0.0F, -4.0F, -3.0F, 6.0F, 14.0F, 5.0F)
-                        .texOffs(28, 19).addBox(-6.0F, -4.0F, -3.0F, 6.0F,  7.0F, 5.0F)
-                        .texOffs(28, 53).addBox(-4.0F,  3.0F, -2.5F, 4.0F,  4.0F, 4.0F),
+                        .texOffs(0, 0).addBox( 0.0F, -4.0F, -3.0F, 6.0F, 14.0F, 5.0F)
+                        .texOffs(24, 24).addBox(-6.0F, -4.0F, -3.0F, 6.0F,  7.0F, 5.0F)
+                        .texOffs(24, 36).addBox(-4.0F,  3.0F, -2.5F, 4.0F,  4.0F, 4.0F),
                 PartPose.offset(-1.0F, -7.0F, 1.0F));
 
         upperBody.addOrReplaceChild("left_arm",
                 CubeListBuilder.create()
-                        .texOffs(14, 42).addBox(0.0F, -2.0F, -1.5F, 3.0F, 16.0F, 3.0F),
+                        .texOffs(12, 35).addBox(0.0F, -2.0F, -1.5F, 3.0F, 16.0F, 3.0F),
                 PartPose.offset(5.0F, -9.0F, 0.5F));
 
         upperBody.addOrReplaceChild("right_arm",
                 CubeListBuilder.create()
-                        .texOffs(14, 17).addBox(-2.0F,  -1.5F, -1.5F, 3.0F, 21.0F, 3.0F)
-                        .texOffs(31,  9).addBox(-2.5F,  15.5F, -2.0F, 4.0F,  4.0F, 4.0F)
-                        .texOffs(31,  9).addBox(-2.5F,  10.5F, -2.0F, 4.0F,  4.0F, 4.0F)
-                        .texOffs(31,  9).addBox(-2.5F,   5.5F, -2.0F, 4.0F,  4.0F, 4.0F),
+                        .texOffs(24, 0).addBox(-2.0F,  -1.5F, -1.5F, 3.0F, 21.0F, 3.0F)
+                        .texOffs(40,  36).addBox(-2.5F,  15.5F, -2.0F, 4.0F,  4.0F, 4.0F)
+                        .texOffs(24,  44).addBox(-2.5F,  10.5F, -2.0F, 4.0F,  4.0F, 4.0F)
+                        .texOffs(40,  44).addBox(-2.5F,   5.5F, -2.0F, 4.0F,  4.0F, 4.0F),
                 PartPose.offset(-8.0F, -9.5F, 1.5F));
 
         root.addOrReplaceChild("left_leg",
                 CubeListBuilder.create()
-                        .texOffs(0, 42).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 16.0F, 3.0F),
+                        .texOffs(36, 0).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 16.0F, 3.0F),
                 PartPose.offset(1.5F, -16.0F, 0.5F));
 
         root.addOrReplaceChild("right_leg",
                 CubeListBuilder.create()
-                        .texOffs(0, 17).addBox(-3.0F, -1.5F, -1.5F, 3.0F, 19.0F, 3.0F),
+                        .texOffs(0, 35).addBox(-3.0F, -1.5F, -1.5F, 3.0F, 19.0F, 3.0F),
                 PartPose.offset(-1.0F, -17.5F, 0.5F));
 
         return meshDefinition;

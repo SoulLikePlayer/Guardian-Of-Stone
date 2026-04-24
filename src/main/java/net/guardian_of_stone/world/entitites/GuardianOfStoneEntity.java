@@ -12,6 +12,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -350,6 +351,10 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      */
     public void setActive(boolean active) {
         this.entityData.set(DATA_ACTIVE, active);
+
+        if(!active){
+            this.removeAllEffects();
+        }
     }
 
     /** {@inheritDoc} */
@@ -397,9 +402,18 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     @Override
     public void handleEntityEvent(byte id) {
         if (id == 4) {
-            this.attackAnimationTicks = 20; // = durée exacte de GUARDIAN_ATTACK
+            this.attackAnimationTicks = 20;
         } else {
             super.handleEntityEvent(id);
         }
+    }
+
+    /**
+     * Prevents any status effect from being applied while the Guardian is dormant.
+     * This avoids visual particles tha would break the "stone statue" illusion.
+     */
+    public boolean canBeAffected(@NotNull MobEffectInstance newEffect) {
+        if (!this.isActive()) return false;
+        return super.canBeAffected(newEffect);
     }
 }
