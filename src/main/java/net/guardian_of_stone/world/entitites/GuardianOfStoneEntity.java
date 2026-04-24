@@ -18,7 +18,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.*;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.creaking.Creaking;
 import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -63,11 +62,6 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     public static final double DETECTION_RADIUS = 16.0;
 
     /**
-     * Radius (in blocks) within which the Guardian deals melee damage on attack.
-     */
-    public static final double ATTACK_REACH = 2.5;
-
-    /**
      * Base melee damage inflicted per hit, in half-hearts.
      */
     public static final float BASE_ATTACK_DAMAGE = 8.0F;
@@ -84,7 +78,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      *
      * <p>Read by the client renderer to decide which animation state to display.</p>
      */
-    private static final EntityDataAccessor<Boolean> DATA_ACTIVE =
+    private static final EntityDataAccessor<@NotNull Boolean> DATA_ACTIVE =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
 
     /** Tick timestamp at which persistent anger expires. {@code 0} = not angry. */
@@ -142,7 +136,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      * synchronized between server and client.</p>
      */
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_ACTIVE, false);
     }
@@ -249,10 +243,11 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      */
     public boolean isThreat(@NotNull LivingEntity entity, @NotNull GuardianOfStoneEntity guardian) {
         if (entity == guardian) return false;
-        if (entity instanceof Spider) return false;
-        if (entity instanceof Monster) return true;
-        if (entity instanceof Player player) return this.isAngryAt(player, (ServerLevel) this.level());
-        return false;
+        return switch (entity) {
+            case Monster monster -> true;
+            case Player player -> this.isAngryAt(player, (ServerLevel) this.level());
+            default -> false;
+        };
     }
     /**
      * {@inheritDoc}
@@ -373,13 +368,13 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      * {@inheritDoc}
      */
     @Override
-    public @Nullable EntityReference<LivingEntity> getPersistentAngerTarget() {
+    public @Nullable EntityReference<@NotNull LivingEntity> getPersistentAngerTarget() {
         return this.persistentAngerTarget;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setPersistentAngerTarget(@Nullable EntityReference<LivingEntity> entityReference) {
+    public void setPersistentAngerTarget(@Nullable EntityReference<@NotNull LivingEntity> entityReference) {
         this.persistentAngerTarget = entityReference;
     }
 
@@ -390,10 +385,10 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     }
 
     @Override
-    public boolean doHurtTarget(ServerLevel level, Entity target) {
+    public boolean doHurtTarget(@NotNull ServerLevel level, @NotNull Entity target) {
         if (!(target instanceof LivingEntity)) return false;
 
-        this.attackAnimationTicks = 15;
+        this.attackAnimationTicks = 20;
         this.level().broadcastEntityEvent(this, (byte)4);
 
         return super.doHurtTarget(level, target);
@@ -402,7 +397,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     @Override
     public void handleEntityEvent(byte id) {
         if (id == 4) {
-            this.attackAnimationTicks = 15;
+            this.attackAnimationTicks = 20; // = durée exacte de GUARDIAN_ATTACK
         } else {
             super.handleEntityEvent(id);
         }
