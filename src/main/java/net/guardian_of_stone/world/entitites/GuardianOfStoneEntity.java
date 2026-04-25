@@ -19,6 +19,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.*;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.creaking.Creaking;
 import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -27,6 +28,8 @@ import net.minecraft.world.level.storage.ValueOutput;
 
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
+
+import java.util.Comparator;
 
 /**
  * Represents the <b>Guardian of Stone</b> entity — an ancient golem-like protector
@@ -52,7 +55,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <h2>Inspiration</h2>
  * The model and animation set are borrowed from the
- * {@link net.minecraft.world.entity.monster.creaking.Creaking}, but the behavior
+ * {@link Creaking}, but the behavior
  * is entirely different.
  */
 public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
@@ -92,6 +95,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /** Drives the attack animation on the client. */
     public final AnimationState attackAnimationState = new AnimationState();
     private int attackAnimationTicks;
+    private boolean wasActive = false;
 
     /** Drives the death animation on the client. */
     public final AnimationState deathAnimationState = new AnimationState();
@@ -190,6 +194,13 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         if (!this.level().isClientSide()) {
             this.updateActiveState();
             this.updatePersistentAnger((ServerLevel) this.level(), true);
+
+            boolean nowActive = this.isActive();
+
+            if (nowActive && !wasActive){
+                this.targetSelector.tick();
+            }
+            wasActive = nowActive;
         }
 
         if (this.level().isClientSide()) {
@@ -207,8 +218,21 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      */
     private void updateActiveState() {
         boolean shouldBeActive = this.getTarget() != null || this.hasNearbyThreat();
+
         if (shouldBeActive != this.isActive()) {
             this.setActive(shouldBeActive);
+
+            if (shouldBeActive && this.getTarget() == null) {
+                LivingEntity nearestThreat = this.level().getEntitiesOfClass(
+                        LivingEntity.class,
+                        this.getBoundingBox().inflate(DETECTION_RADIUS),
+                        e -> isThreat(e, this)
+                ).stream().min(
+                        Comparator.comparingDouble(e -> e.distanceToSqr(this))
+                ).orElse(null);
+
+                this.setTarget(nearestThreat);
+            }
         }
     }
 
@@ -244,6 +268,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      */
     public boolean isThreat(@NotNull LivingEntity entity, @NotNull GuardianOfStoneEntity guardian) {
         if (entity == guardian) return false;
+        if (entity instanceof Spider) return false;
         return switch (entity) {
             case Monster monster -> true;
             case Player player -> this.isAngryAt(player, (ServerLevel) this.level());
