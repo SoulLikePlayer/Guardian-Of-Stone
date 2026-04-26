@@ -1,11 +1,12 @@
 package net.guardian_of_stone.client.renderer.entity;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.guardian_of_stone.client.GuardianOfStoneClient;
 import net.guardian_of_stone.client.model.entity.GuardianOfStoneModel;
 import net.guardian_of_stone.client.renderer.entity.state.GuardianOfStoneEntityRenderState;
 import net.guardian_of_stone.core.GuardianOfStone;
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
-import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.Identifier;
@@ -32,6 +33,9 @@ public class GuardianOfStoneEntityRenderer<T extends GuardianOfStoneEntity>
         state.canMove = entity.isActive();
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.deathAnimationState.copyFrom(entity.deathAnimationState);
+
+        state.deathTime = 0.0F;
+        state.hurtTime = 0;
     }
 
     @Override

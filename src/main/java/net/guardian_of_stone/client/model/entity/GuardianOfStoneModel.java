@@ -10,7 +10,6 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
-import net.minecraft.client.model.monster.creaking.CreakingModel;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
@@ -32,7 +31,7 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneEn
 
         this.walkAnimation   = GuardianOfStoneAnimation.GUARDIAN_WALK.bake(root);
         this.attackAnimation = GuardianOfStoneAnimation.GUARDIAN_ATTACK.bake(root);
-        this.deathAnimation  = GuardianOfStoneAnimation.GUARDIAN_ATTACK.bake(root);
+        this.deathAnimation  = GuardianOfStoneAnimation.GUARDIAN_DEATH.bake(root); // ← corrigé
     }
 
 

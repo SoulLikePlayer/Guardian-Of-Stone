@@ -54,51 +54,27 @@ import java.util.Comparator;
  * between the "statue" idle pose and the walking animation.
  *
  * <h2>Inspiration</h2>
- * The model and animation set are borrowed from the
- * {@link Creaking}, but the behavior
- * is entirely different.
+ * The model and animation set are borrowed from {@link Creaking},
+ * but the behavior is entirely different.
  */
 public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
-    /**
-     * Radius (in blocks) within which the Guardian scans for threats while dormant.
-     * Once a hostile entity is found inside this sphere, the Guardian awakens.
-     */
-    public static final double DETECTION_RADIUS = 16.0;
 
-    /**
-     * Base melee damage inflicted per hit, in half-hearts.
-     */
+    public static final double DETECTION_RADIUS = 16.0;
     public static final float BASE_ATTACK_DAMAGE = 8.0F;
 
-    /**
-     * Persistent-anger duration range (in ticks) when the Guardian is provoked
-     * by a player. Mirrors vanilla neutral mob conventions.
-     */
-    private static final UniformInt PERSISTENT_ANGER_TIME = TimeUtil.rangeOfSeconds(20, 39);
+    public final AnimationState attackAnimationState = new AnimationState();
+    public final AnimationState deathAnimationState = new AnimationState();
 
-    /**
-     * Synchronized flag indicating whether the Guardian is currently active
-     * (moving / fighting) or dormant (frozen in place like a statue).
-     *
-     * <p>Read by the client renderer to decide which animation state to display.</p>
-     */
+    private static final UniformInt PERSISTENT_ANGER_TIME = TimeUtil.rangeOfSeconds(20, 39);
     private static final EntityDataAccessor<@NotNull Boolean> DATA_ACTIVE =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
 
-    /** Tick timestamp at which persistent anger expires. {@code 0} = not angry. */
     private long persistentAngerEndTime;
-
-    /** The reference of the player (or entity) that last provoked this Guardian. */
-    @Nullable
-    private EntityReference<@NotNull LivingEntity> persistentAngerTarget;
-
-    /** Drives the attack animation on the client. */
-    public final AnimationState attackAnimationState = new AnimationState();
+    @Nullable private EntityReference<@NotNull LivingEntity> persistentAngerTarget;
     private int attackAnimationTicks;
     private boolean wasActive = false;
+    private int deathTime;
 
-    /** Drives the death animation on the client. */
-    public final AnimationState deathAnimationState = new AnimationState();
 
     /**
      * Constructs a new Guardian of Stone.
@@ -113,17 +89,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Builds the default attribute map for the Guardian of Stone.
      *
-     * <p>Key stats:
      * <ul>
-     *   <li>Max health: 80 HP (40 hearts) — a sturdy, hard-to-kill protector</li>
-     *   <li>Movement speed: 0.23 — slightly slower than a player</li>
-     *   <li>Attack damage: 8 HP (4 hearts) per hit</li>
-     *   <li>Knockback resistance: 0.8 — nearly immune to knockback, fitting for a stone golem</li>
-     *   <li>Follow range: 32 blocks — wide patrol area</li>
+     *   <li><b>Max health:</b> 80 HP (40 hearts) — a sturdy, hard-to-kill protector.</li>
+     *   <li><b>Movement speed:</b> 0.23 — slightly slower than a player.</li>
+     *   <li><b>Attack damage:</b> {@value BASE_ATTACK_DAMAGE} HP per hit.</li>
+     *   <li><b>Knockback resistance:</b> 0.8 — nearly immune to knockback, fitting for a stone golem.</li>
+     *   <li><b>Follow range:</b> 32 blocks — wide patrol area.</li>
      * </ul>
-     * </p>
      *
-     * @return a fully-configured {@link AttributeSupplier} builder
+     * @return a fully-configured {@link AttributeSupplier.Builder}
      */
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
@@ -151,11 +125,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      *
      * <p>Goal priority list (lower index = higher priority):
      * <ol>
-     *   <li>Float on water (prevent drowning).</li>
+     *   <li>Float on water — prevents drowning.</li>
      *   <li>Melee attack — only executes while {@link #isActive()}.</li>
-     *   <li>Wander within its home territory — only while active.</li>
-     *   <li>Look at a nearby entity when idle.</li>
-     *   <li>Look randomly when nothing else to do.</li>
+     *   <li>Wander within home territory — only while active.</li>
+     * </ol>
+     * Target selector priority list:
+     * <ol>
+     *   <li>Retaliate against whoever hurt the Guardian.</li>
+     *   <li>Attack an angry-at player.</li>
+     *   <li>Hunt the nearest non-spider hostile mob.</li>
      * </ol>
      * </p>
      */
@@ -174,12 +152,13 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * {@inheritDoc}
      *
-     * <p>Each server tick the Guardian:
+     * <p>Each tick the Guardian:
      * <ol>
-     *   <li>Refreshes its active state by scanning for nearby threats.</li>
-     *   <li>Updates the server-side {@link #attackAnimationState} so the client
-     *       renderer can play the swing animation at the right moment.</li>
-     *   <li>Decrements the persistent-anger timer if applicable.</li>
+     *   <li>Decrements the attack-animation counter.</li>
+     *   <li><i>(Server only)</i> Refreshes its active state by scanning for nearby threats.</li>
+     *   <li><i>(Server only)</i> Advances the persistent-anger timer.</li>
+     *   <li><i>(Server only)</i> Forces a target-selector tick immediately on wake-up.</li>
+     *   <li><i>(Client only)</i> Drives the attack {@link AnimationState}.</li>
      * </ol>
      * </p>
      */
@@ -196,8 +175,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
             this.updatePersistentAnger((ServerLevel) this.level(), true);
 
             boolean nowActive = this.isActive();
-
-            if (nowActive && !wasActive){
+            if (nowActive && !wasActive) {
                 this.targetSelector.tick();
             }
             wasActive = nowActive;
@@ -209,12 +187,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     }
 
     /**
-     * Evaluates whether the Guardian should currently be active.
+     * Evaluates whether the Guardian should currently be active and updates its state.
      *
      * <p>The Guardian wakes up when at least one hostile entity (excluding spiders)
-     * is within {@link #DETECTION_RADIUS} blocks, or when it has a current
+     * is within {@link #DETECTION_RADIUS} blocks, or when it already has a current
      * attack target. It returns to dormancy once all threats have left the area
      * and its anger has expired.</p>
+     *
+     * <p>When transitioning from dormant to active without a pre-existing target,
+     * the nearest threat is automatically assigned as the initial target.</p>
      */
     private void updateActiveState() {
         boolean shouldBeActive = this.getTarget() != null || this.hasNearbyThreat();
@@ -239,14 +220,8 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Scans the surrounding area for any living entity that qualifies as a threat.
      *
-     * <p>A threat is any {@link LivingEntity} that is:
-     * <ul>
-     *   <li>a {@link Monster} (hostile mob), excluding {@link Spider},</li>
-     *   <li>or a {@link Player} that the Guardian is currently angry at.</li>
-     * </ul>
-     * </p>
-     *
      * @return {@code true} if at least one threat is within {@link #DETECTION_RADIUS}
+     * @see #isThreat(LivingEntity, GuardianOfStoneEntity)
      */
     private boolean hasNearbyThreat() {
         return !this.level().getEntitiesOfClass(
@@ -259,11 +234,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Determines whether the given entity qualifies as a threat to the Guardian.
      *
-     * <p>Spiders are explicitly excluded. Players are only considered threats
-     * if the Guardian is angry at them.</p>
+     * <p>An entity is a threat if it is:
+     * <ul>
+     *   <li>a {@link Monster} (hostile mob), <b>excluding</b> {@link Spider},</li>
+     *   <li>or a {@link Player} that the Guardian is currently angry at.</li>
+     * </ul>
+     * The Guardian itself is never considered its own threat.</p>
      *
      * @param entity   the entity to evaluate
-     * @param guardian the Guardian performing the check (needed for anger state)
+     * @param guardian the Guardian performing the check (needed for anger-state lookup)
      * @return {@code true} if the entity should wake the Guardian
      */
     public boolean isThreat(@NotNull LivingEntity entity, @NotNull GuardianOfStoneEntity guardian) {
@@ -275,11 +254,44 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
             default -> false;
         };
     }
+
     /**
      * {@inheritDoc}
      *
-     * <p>Starts the death animation state so the client renderer can play the
-     * collapse sequence before the entity is removed from the world.</p>
+     * <p>Triggers the attack animation on both server (broadcast) and client,
+     * then delegates actual damage to the superclass. Returns {@code false}
+     * immediately if the target is not a {@link LivingEntity}.</p>
+     */
+    @Override
+    public boolean doHurtTarget(@NotNull ServerLevel level, @NotNull Entity target) {
+        if (!(target instanceof LivingEntity)) return false;
+
+        this.attackAnimationTicks = 20;
+        this.level().broadcastEntityEvent(this, (byte) 4);
+
+        return super.doHurtTarget(level, target);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Handles the {@code 4} entity event sent by {@link #doHurtTarget} to
+     * synchronize the attack animation on the client side.</p>
+     */
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id == 4) {
+            this.attackAnimationTicks = 20;
+        } else {
+            super.handleEntityEvent(id);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Starts the death {@link AnimationState} on the client so the renderer
+     * can play the collapse sequence before the entity is removed from the world.</p>
      */
     @Override
     public void die(@NotNull DamageSource source) {
@@ -288,6 +300,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
             this.deathAnimationState.start(this.tickCount);
         }
     }
+
     /**
      * {@inheritDoc}
      *
@@ -301,11 +314,33 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         return super.isInvulnerableTo(level, source);
     }
 
+    // -------------------------------------------------------------------------
+    // Status effects
+    // -------------------------------------------------------------------------
+
     /**
-     * Returns the ambient idle sound. The Guardian rarely makes noise while dormant,
-     * emitting only a quiet grinding-stone sound.
+     * {@inheritDoc}
      *
-     * @return the ambient {@link SoundEvent}
+     * <p>Prevents any status effect from being applied while the Guardian is dormant,
+     * avoiding visual particles that would break the "stone statue" illusion.</p>
+     */
+    @Override
+    public boolean canBeAffected(@NotNull MobEffectInstance newEffect) {
+        if (!this.isActive()) return false;
+        return super.canBeAffected(newEffect);
+    }
+
+    // -------------------------------------------------------------------------
+    // Sounds
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the ambient idle sound.
+     *
+     * <p>While active the Guardian emits a quiet grinding-stone sound; while dormant
+     * it makes no noise at all to preserve the statue illusion.</p>
+     *
+     * @return {@link SoundEvents#STONE_STEP} when active, {@code null} otherwise
      */
     @Override
     protected @Nullable SoundEvent getAmbientSound() {
@@ -315,8 +350,8 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Returns the sound played when the Guardian takes damage.
      *
-     * @param source the source of the damage
-     * @return the hurt {@link SoundEvent}
+     * @param source the source of the damage (unused)
+     * @return {@link SoundEvents#STONE_HIT}
      */
     @Override
     protected @Nullable SoundEvent getHurtSound(@NotNull DamageSource source) {
@@ -326,20 +361,23 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Returns the sound played when the Guardian dies.
      *
-     * @return the death {@link SoundEvent}
+     * @return {@link SoundEvents#STONE_BREAK}
      */
     @Override
     protected @Nullable SoundEvent getDeathSound() {
         return SoundEvents.STONE_BREAK;
     }
 
+    // -------------------------------------------------------------------------
+    // Persistence (save / load)
+    // -------------------------------------------------------------------------
+
     /**
      * {@inheritDoc}
      *
      * <p>Saves persistent anger data so the Guardian remembers which player
-     * provoked it across chunk unloads and restarts.</p>
+     * provoked it across chunk unloads and game restarts.</p>
      */
-
     @Override
     protected void addAdditionalSaveData(@NotNull ValueOutput output) {
         super.addAdditionalSaveData(output);
@@ -349,7 +387,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * {@inheritDoc}
      *
-     * <p>Restores persistent anger data.</p>
+     * <p>Restores persistent anger data saved by {@link #addAdditionalSaveData}.</p>
      */
     @Override
     public void readAdditionalSaveData(@NotNull ValueInput input) {
@@ -357,11 +395,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         this.readPersistentAngerSaveData(this.level(), input);
     }
 
+    // -------------------------------------------------------------------------
+    // Active state
+    // -------------------------------------------------------------------------
+
     /**
      * Returns whether the Guardian is currently in its active (awakened) state.
      *
-     * <p>When {@code true} the Guardian will move, attack, and play walking
-     * animations. When {@code false} it stands frozen like a statue.</p>
+     * <p>When {@code true} the Guardian moves, attacks, and plays walking animations.
+     * When {@code false} it stands frozen like a statue.</p>
      *
      * @return {@code true} if active
      */
@@ -372,15 +414,21 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Sets the Guardian's active state and broadcasts the change to all tracking clients.
      *
+     * <p>Transitioning to dormant ({@code false}) also clears all active status effects
+     * to avoid visual artifacts on the frozen statue model.</p>
+     *
      * @param active {@code true} to awaken the Guardian, {@code false} to make it dormant
      */
     public void setActive(boolean active) {
         this.entityData.set(DATA_ACTIVE, active);
-
-        if(!active){
+        if (!active) {
             this.removeAllEffects();
         }
     }
+
+    // -------------------------------------------------------------------------
+    // NeutralMob — persistent anger
+    // -------------------------------------------------------------------------
 
     /** {@inheritDoc} */
     @Override
@@ -394,9 +442,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         this.persistentAngerEndTime = time;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public @Nullable EntityReference<@NotNull LivingEntity> getPersistentAngerTarget() {
         return this.persistentAngerTarget;
@@ -408,37 +454,24 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         this.persistentAngerTarget = entityReference;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Samples a random duration from {@link #PERSISTENT_ANGER_TIME} and sets the
+     * expiry tick accordingly.</p>
+     */
     @Override
     public void startPersistentAngerTimer() {
         this.setPersistentAngerEndTime(PERSISTENT_ANGER_TIME.sample(this.random) + this.tickCount);
     }
 
     @Override
-    public boolean doHurtTarget(@NotNull ServerLevel level, @NotNull Entity target) {
-        if (!(target instanceof LivingEntity)) return false;
+    protected void tickDeath() {
+        ++this.deathTime;
 
-        this.attackAnimationTicks = 20;
-        this.level().broadcastEntityEvent(this, (byte)4);
-
-        return super.doHurtTarget(level, target);
-    }
-
-    @Override
-    public void handleEntityEvent(byte id) {
-        if (id == 4) {
-            this.attackAnimationTicks = 20;
-        } else {
-            super.handleEntityEvent(id);
+        if(this.deathTime >= 30){
+            this.level().broadcastEntityEvent(this, (byte) 60);
+            this.remove(RemovalReason.KILLED);
         }
-    }
-
-    /**
-     * Prevents any status effect from being applied while the Guardian is dormant.
-     * This avoids visual particles tha would break the "stone statue" illusion.
-     */
-    public boolean canBeAffected(@NotNull MobEffectInstance newEffect) {
-        if (!this.isActive()) return false;
-        return super.canBeAffected(newEffect);
     }
 }

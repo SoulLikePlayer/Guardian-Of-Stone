@@ -51,4 +51,5 @@ public class GuardianOfStoneEntityRenderState extends LivingEntityRenderState {
      * freezes in its default T-pose, giving the appearance of a stone statue.</p>
      */
     public boolean canMove;
+    public int hurtTime;
 }
