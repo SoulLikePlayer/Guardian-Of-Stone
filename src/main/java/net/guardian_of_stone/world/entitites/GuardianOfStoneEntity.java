@@ -2,6 +2,7 @@ package net.guardian_of_stone.world.entitites;
 
 import net.guardian_of_stone.world.entitites.ai.goals.*;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -9,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.damagesource.DamageSource;
@@ -23,6 +25,8 @@ import net.minecraft.world.entity.monster.creaking.Creaking;
 import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -119,6 +123,18 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         super.defineSynchedData(builder);
         builder.define(DATA_ACTIVE, false);
     }
+
+    public static boolean checkSpawnRules(
+            EntityType<@NotNull GuardianOfStoneEntity> type,
+            ServerLevelAccessor level,
+            EntitySpawnReason reason,
+            BlockPos pos,
+            RandomSource random) {
+
+        return pos.getY() <= 40 && checkMobSpawnRules(type, level, reason, pos, random);
+    }
+
+
 
     /**
      * {@inheritDoc}

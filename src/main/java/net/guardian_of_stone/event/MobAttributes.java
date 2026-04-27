@@ -25,7 +25,7 @@ public class MobAttributes {
                 ModEntities.GUARDIAN_OF_STONE.get(),
                 SpawnPlacementTypes.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                GuardianOfStoneEntity::checkMobSpawnRules,
+                GuardianOfStoneEntity::checkSpawnRules,
                 RegisterSpawnPlacementsEvent.Operation.OR
         );
     }
