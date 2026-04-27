@@ -19,7 +19,7 @@ public class ModEntities {
             "guardian_of_stone",
                     () -> EntityType.Builder.of(
                             GuardianOfStoneEntity::new,
-                            MobCategory.CREATURE
+                            MobCategory.MONSTER
                     )
                     .build(ResourceKey.create(
                     Registries.ENTITY_TYPE,
