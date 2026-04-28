@@ -63,8 +63,8 @@ import java.util.Comparator;
  */
 public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
 
-    public static final double DETECTION_RADIUS = 16.0;
-    public static final float BASE_ATTACK_DAMAGE = 8.0F;
+    public static final double DETECTION_RADIUS = 28.0;
+    public static final float BASE_ATTACK_DAMAGE = 20.0F;
 
     public final AnimationState attackAnimationState = new AnimationState();
     public final AnimationState deathAnimationState = new AnimationState();
@@ -93,23 +93,36 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Builds the default attribute map for the Guardian of Stone.
      *
+     * <p>These values are tuned to make the Guardian feel like an immovable
+     * force of nature — a living mountain rather than a simple golem.</p>
+     *
      * <ul>
-     *   <li><b>Max health:</b> 80 HP (40 hearts) — a sturdy, hard-to-kill protector.</li>
-     *   <li><b>Movement speed:</b> 0.23 — slightly slower than a player.</li>
-     *   <li><b>Attack damage:</b> {@value BASE_ATTACK_DAMAGE} HP per hit.</li>
-     *   <li><b>Knockback resistance:</b> 0.8 — nearly immune to knockback, fitting for a stone golem.</li>
-     *   <li><b>Follow range:</b> 32 blocks — wide patrol area.</li>
+     *   <li><b>Max health:</b> 220 HP (110 hearts) — nearly three times the original;
+     *       players must commit to a prolonged, dangerous fight.</li>
+     *   <li><b>Movement speed:</b> 0.18 — deliberately slower than before; the Guardian
+     *       does not chase, it <em>advances</em> with unstoppable patience.</li>
+     *   <li><b>Attack damage:</b> {@value BASE_ATTACK_DAMAGE} HP per hit — 2.5x the original,
+     *       capable of killing an unarmored player in two blows.</li>
+     *   <li><b>Knockback resistance:</b> 1.0 — total immunity; no weapon, explosion, or
+     *       mechanic can push it back even a single block.</li>
+     *   <li><b>Follow range:</b> 56 blocks — it senses threats from far away, reinforcing
+     *       the feel of an ancient sentinel with preternatural awareness.</li>
+     *   <li><b>Armor:</b> 10 — heavy physical damage reduction, equivalent to full iron armor.</li>
+     *   <li><b>Armor toughness:</b> 6 — high-damage hits are significantly dampened;
+     *       you cannot simply critical-hit your way through it.</li>
      * </ul>
      *
      * @return a fully-configured {@link AttributeSupplier.Builder}
      */
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, 80.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.23)
+                .add(Attributes.MAX_HEALTH, 220.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.18)
                 .add(Attributes.ATTACK_DAMAGE, BASE_ATTACK_DAMAGE)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 0.8)
-                .add(Attributes.FOLLOW_RANGE, 32.0);
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0)
+                .add(Attributes.FOLLOW_RANGE, 56.0)
+                .add(Attributes.ARMOR, 10.0)
+                .add(Attributes.ARMOR_TOUGHNESS, 6.0);
     }
 
     /**
@@ -198,7 +211,9 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         }
 
         if (this.level().isClientSide()) {
-            this.attackAnimationState.animateWhen(this.attackAnimationTicks > 0, this.tickCount);
+            if (this.attackAnimationTicks <= 0) {
+                this.attackAnimationState.stop();
+            }
         }
     }
 
@@ -298,6 +313,9 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     public void handleEntityEvent(byte id) {
         if (id == 4) {
             this.attackAnimationTicks = 20;
+            this.attackAnimationState.start(this.tickCount);
+        } else if (id == 3) {
+            this.deathAnimationState.start(this.tickCount);
         } else {
             super.handleEntityEvent(id);
         }
@@ -312,9 +330,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     @Override
     public void die(@NotNull DamageSource source) {
         super.die(source);
-        if (this.level().isClientSide()) {
-            this.deathAnimationState.start(this.tickCount);
-        }
+        this.level().broadcastEntityEvent(this, (byte) 3);
     }
 
     /**
@@ -330,10 +346,6 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         return super.isInvulnerableTo(level, source);
     }
 
-    // -------------------------------------------------------------------------
-    // Status effects
-    // -------------------------------------------------------------------------
-
     /**
      * {@inheritDoc}
      *
@@ -345,10 +357,6 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         if (!this.isActive()) return false;
         return super.canBeAffected(newEffect);
     }
-
-    // -------------------------------------------------------------------------
-    // Sounds
-    // -------------------------------------------------------------------------
 
     /**
      * Returns the ambient idle sound.
@@ -384,10 +392,6 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         return SoundEvents.STONE_BREAK;
     }
 
-    // -------------------------------------------------------------------------
-    // Persistence (save / load)
-    // -------------------------------------------------------------------------
-
     /**
      * {@inheritDoc}
      *
@@ -410,10 +414,6 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         super.readAdditionalSaveData(input);
         this.readPersistentAngerSaveData(this.level(), input);
     }
-
-    // -------------------------------------------------------------------------
-    // Active state
-    // -------------------------------------------------------------------------
 
     /**
      * Returns whether the Guardian is currently in its active (awakened) state.
@@ -439,12 +439,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         this.entityData.set(DATA_ACTIVE, active);
         if (!active) {
             this.removeAllEffects();
+            this.getNavigation().stop();
+            this.setTarget(null);
+            this.setDeltaMovement(
+                    this.getDeltaMovement().x * 0,
+                    this.getDeltaMovement().y,
+                    this.getDeltaMovement().z * 0
+            );
         }
     }
-
-    // -------------------------------------------------------------------------
-    // NeutralMob — persistent anger
-    // -------------------------------------------------------------------------
 
     /** {@inheritDoc} */
     @Override
