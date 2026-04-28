@@ -1,6 +1,7 @@
 package net.guardian_of_stone.core;
 
 import net.guardian_of_stone.world.entitites.ModEntities;
+import net.guardian_of_stone.world.item.ModItemGroups;
 import net.guardian_of_stone.world.item.ModItems;
 import org.slf4j.Logger;
 
@@ -21,6 +22,7 @@ public class GuardianOfStone {
     public GuardianOfStone(IEventBus modEventBus, ModContainer modContainer) {
         ModEntities.ENTITY_TYPES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModItemGroups.CREATIVE_MODE_TABS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }

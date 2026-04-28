@@ -1,3 +1,6 @@
 {
-  "item.guardian_of_stone.guardian_of_stone_spawn_egg": "Guardian Of Stone Spawn Egg"
+  "entity.guardian_of_stone.guardian_of_stone": "Guardian of Stone",
+
+  "item.guardian_of_stone.guardian_of_stone_spawn_egg": "Guardian Of Stone Spawn Egg",
+  "itemGroup.guardian_of_stone": "Guardian Of Stone"
 }
