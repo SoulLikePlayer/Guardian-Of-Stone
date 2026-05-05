@@ -1,4 +1,4 @@
-package net.guardian_of_stone.world.entitites.ai.goals;
+package net.guardian_of_stone.world.entitites.ai.goals.support;
 
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
 import net.minecraft.core.BlockPos;
@@ -24,10 +24,14 @@ import java.util.EnumSet;
  *       scouting state and stores the target block type.</li>
  *   <li>On the next goal tick, {@link #canUse()} returns {@code true}, and
  *       {@link #start()} begins a spiral search around the Guardian's feet.</li>
- *   <li>Each tick of {@link #tick()} walks the Guardian toward the found vein,
- *       emitting block-break particles so the player can follow.</li>
- *   <li>The goal ends when the Guardian arrives at the vein ({@link #ARRIVE_DIST_SQ}),
- *       the scouting flag is cleared, or a combat threat interrupts.</li>
+ *   <li>Each tick of {@link #tick()} walks the Guardian toward the found vein at full
+ *       speed ({@value #ESCORT_SPEED}), emitting block-break particles so the player
+ *       can follow. Combat threats are intentionally ignored during this phase.</li>
+ *   <li>Upon arrival the goal calls {@link GuardianOfStoneEntity#startPointing(BlockPos)}
+ *       which freezes the Guardian facing the vein and plays the arm-pointing animation
+ *       for {@link GuardianOfStoneEntity#POINTING_DURATION_TICKS} ticks.</li>
+ *   <li>The goal then ends and {@code stopScouting(true)} is called by the entity's own
+ *       pointing-countdown logic once the pose is over.</li>
  * </ol>
  *
  * <h2>Search parameters</h2>
@@ -44,20 +48,25 @@ public class GuardianOreScoutGoal extends Goal {
     private static final int SEARCH_DEPTH  = 32;
     private static final int SEARCH_HEIGHT = 8;
 
-    private static final double ESCORT_SPEED = 0.6;
-    private static final double ARRIVE_DIST_SQ = 9.0; // 3 blocks
+    /** Full movement speed during scouting — no penalty compared to combat movement. */
+    private static final double ESCORT_SPEED = 1.0;
+
+    /**
+     * Arrival threshold in XZ-only distance squared (4 blocks).
+     * We compare only horizontal distance so the Guardian stops above the vein
+     * even when the ore is deep underground.
+     */
+    private static final double ARRIVE_DIST_XZ_SQ = 16.0;
 
     private static final int PARTICLE_INTERVAL = 15;
-    private static final int PARTICLE_COUNT = 6;
+    private static final int PARTICLE_COUNT    = 6;
 
-    private static final int MAX_ESCORT_TICKS = 20 * 60; // 60 s
-
+    private static final int MAX_ESCORT_TICKS = 20 * 60;
 
     private final GuardianOfStoneEntity guardian;
     @Nullable private BlockPos targetVein;
 
     private int escortTicksRemaining;
-
     private int tickCounter;
 
     /**
@@ -70,48 +79,44 @@ public class GuardianOreScoutGoal extends Goal {
         this.setFlags(EnumSet.of(Flag.MOVE));
     }
 
-
     /**
      * {@inheritDoc}
      *
-     * <p>Active only when the Guardian is in scouting mode <em>and</em> not
-     * currently fighting a threat (target takes priority).</p>
+     * <p>Active only when the Guardian is in scouting mode. Combat threats do NOT
+     * prevent this goal from starting — targeting goals suppress themselves while
+     * {@link GuardianOfStoneEntity#isScouting()} is {@code true}.</p>
      */
     @Override
     public boolean canUse() {
-        return this.guardian.isScouting()
-                && this.guardian.getTarget() == null;
+        return this.guardian.isScouting();
     }
 
     /**
      * {@inheritDoc}
      *
-     * <p>Stop if scouting was cancelled (e.g. combat interrupted), if we ran out
-     * of escort time, or if the vein was never found.</p>
+     * <p>Stop if scouting was cancelled, we ran out of escort time, or the vein
+     * was never found. Combat no longer interrupts this goal.</p>
      */
     @Override
     public boolean canContinueToUse() {
         return this.guardian.isScouting()
-                && this.guardian.getTarget() == null
                 && this.targetVein != null
-                && this.escortTicksRemaining > 0;
+                && this.escortTicksRemaining > 0
+                && !this.guardian.isPointing();
     }
 
     /**
      * {@inheritDoc}
      *
-     * <p>Performs the spiral ore search synchronously on {@code start()}. Searching
-     * once up-front is acceptable because the search is bounded and runs only when
-     * the player explicitly hands an item — not every tick.</p>
+     * <p>Performs the spiral ore search synchronously on {@code start()}.</p>
      */
     @Override
     public void start() {
-        this.tickCounter           = 0;
-        this.escortTicksRemaining  = MAX_ESCORT_TICKS;
-        this.targetVein            = findNearestVein();
+        this.tickCounter          = 0;
+        this.escortTicksRemaining = MAX_ESCORT_TICKS;
+        this.targetVein           = findNearestVein();
 
         if (this.targetVein == null) {
-            // Nothing found — signal failure immediately so the flag gets cleared.
             this.guardian.stopScouting(false);
         } else {
             navigateTo(this.targetVein);
@@ -130,17 +135,17 @@ public class GuardianOreScoutGoal extends Goal {
         this.escortTicksRemaining--;
         this.tickCounter++;
 
-        // Periodically burst particles above the target vein so the player can follow.
         if (this.tickCounter % PARTICLE_INTERVAL == 0) {
             spawnGuideParticles();
         }
 
-        // Check arrival.
-        double distSq = this.guardian.blockPosition().distSqr(this.targetVein);
-        if (distSq <= ARRIVE_DIST_SQ) {
-            // Arrived — do a final large particle burst then finish.
+        BlockPos gPos = this.guardian.blockPosition();
+        double dxArrival = gPos.getX() - this.targetVein.getX();
+        double dzArrival = gPos.getZ() - this.targetVein.getZ();
+        double distXZSq  = dxArrival * dxArrival + dzArrival * dzArrival;
+        if (distXZSq <= ARRIVE_DIST_XZ_SQ) {
             spawnArrivalParticles();
-            this.guardian.stopScouting(true);
+            this.guardian.startPointing(this.targetVein);
         }
     }
 
@@ -151,7 +156,6 @@ public class GuardianOreScoutGoal extends Goal {
         this.guardian.getNavigation().stop();
     }
 
-    // ── Search ────────────────────────────────────────────────────────────────
 
     /**
      * Scans the world in concentric horizontal rings around the Guardian's feet,
@@ -162,7 +166,7 @@ public class GuardianOreScoutGoal extends Goal {
      */
     @Nullable
     private BlockPos findNearestVein() {
-        Block target    = this.guardian.getScoutBlock();
+        Block target = this.guardian.getScoutBlock();
         if (target == null) return null;
 
         BlockPos origin  = this.guardian.blockPosition();
@@ -172,7 +176,6 @@ public class GuardianOreScoutGoal extends Goal {
         for (int r = 0; r <= SEARCH_RADIUS; r++) {
             for (int dx = -r; dx <= r; dx++) {
                 for (int dz = -r; dz <= r; dz++) {
-                    // Only process the shell of this ring.
                     if (Math.abs(dx) != r && Math.abs(dz) != r) continue;
 
                     for (int dy = -SEARCH_DEPTH; dy <= SEARCH_HEIGHT; dy++) {
@@ -190,41 +193,49 @@ public class GuardianOreScoutGoal extends Goal {
                 }
             }
 
-            // Early exit: if we already found a block in a previous ring and are now
-            // entering a ring whose minimum possible distance exceeds our best, stop.
             if (bestPos != null && r > Math.sqrt(bestDist) + 1) break;
         }
 
         return bestPos;
     }
 
-    // ── Navigation ────────────────────────────────────────────────────────────
 
-    /** Sends the Guardian's pathfinder toward the given block position. */
-    private void navigateTo(BlockPos pos) {
+    /**
+     * Sends the Guardian's pathfinder toward the surface directly above the vein.
+     *
+     * <p>The pathfinder needs a walkable Y position — passing the ore's actual Y
+     * would send it underground. We find the first open (non-solid) block column
+     * above the vein and use that Y as the navigation target.</p>
+     */
+    private void navigateTo(BlockPos vein) {
+        BlockPos walkTarget = vein;
+        for (int i = 0; i < 96; i++) {
+            BlockPos above = walkTarget.above();
+            if (!this.guardian.level().getBlockState(above).isSolid()) {
+                walkTarget = above;
+                break;
+            }
+            walkTarget = above;
+        }
+
         this.guardian.getNavigation().moveTo(
-                pos.getX() + 0.5,
-                pos.getY(),
-                pos.getZ() + 0.5,
+                vein.getX() + 0.5,
+                walkTarget.getY(),
+                vein.getZ() + 0.5,
                 ESCORT_SPEED
         );
     }
 
-    // ── Particles ─────────────────────────────────────────────────────────────
 
-    /**
-     * Emits a small burst of block-break particles above the target vein so
-     * the player can follow the trail.
-     */
+    /** Emits a small burst of block-break particles above the target vein. */
     private void spawnGuideParticles() {
         if (!(this.guardian.level() instanceof ServerLevel serverLevel)) return;
         if (this.targetVein == null) return;
 
-        Block      target   = this.guardian.getScoutBlock();
+        Block      target = this.guardian.getScoutBlock();
         if (target == null) return;
-        BlockState state    = target.defaultBlockState();
+        BlockState state  = target.defaultBlockState();
 
-        // Particles float just above the vein surface.
         double px = this.targetVein.getX() + 0.5;
         double py = this.targetVein.getY() + 1.2;
         double pz = this.targetVein.getZ() + 0.5;
@@ -233,15 +244,12 @@ public class GuardianOreScoutGoal extends Goal {
                 new BlockParticleOption(ParticleTypes.BLOCK, state),
                 px, py, pz,
                 PARTICLE_COUNT,
-                0.3, 0.3, 0.3, // spread
-                0.05             // speed
+                0.3, 0.3, 0.3,
+                0.05
         );
     }
 
-    /**
-     * Emits a large celebratory burst when the Guardian arrives, clearly
-     * marking the vein position for the player.
-     */
+    /** Emits a large celebratory burst when the Guardian arrives at the vein. */
     private void spawnArrivalParticles() {
         if (!(this.guardian.level() instanceof ServerLevel serverLevel)) return;
         if (this.targetVein == null) return;
@@ -257,7 +265,7 @@ public class GuardianOreScoutGoal extends Goal {
         serverLevel.sendParticles(
                 new BlockParticleOption(ParticleTypes.BLOCK, state),
                 px, py, pz,
-                40,             // big burst
+                40,
                 0.6, 0.6, 0.6,
                 0.15
         );

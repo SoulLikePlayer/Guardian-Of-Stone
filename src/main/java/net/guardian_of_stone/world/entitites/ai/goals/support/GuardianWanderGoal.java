@@ -1,4 +1,4 @@
-package net.guardian_of_stone.world.entitites.ai.goals;
+package net.guardian_of_stone.world.entitites.ai.goals.support;
 
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;

@@ -1,6 +1,8 @@
 package net.guardian_of_stone.world.entitites;
 
-import net.guardian_of_stone.world.entitites.ai.goals.*;
+import net.guardian_of_stone.world.entitites.ai.goals.attack.*;
+import net.guardian_of_stone.world.entitites.ai.goals.support.*;
+import net.guardian_of_stone.world.entitites.ai.goals.other.*;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -14,6 +16,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -26,6 +29,7 @@ import net.minecraft.world.entity.ai.goal.target.*;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.creaking.Creaking;
 import net.minecraft.world.entity.monster.spider.Spider;
+import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -55,13 +59,24 @@ import java.util.Map;
  *       state and pursues its target using standard pathfinding.</li>
  *   <li><b>Spider neutrality:</b> The Guardian ignores {@link Spider} mobs entirely,
  *       treating them as non-threats regardless of circumstances.</li>
+ *   <li><b>Warden deference:</b> The Guardian never attacks a {@link Warden}.
+ *       Upon detecting one within range it immediately enters a forced-dormant
+ *       "statue" state and plays dead. If the Warden strikes it, it flees at high
+ *       speed until safely out of range. See
+ *       {@link GuardianWardenFleeGoal}.</li>
+ *   <li><b>Sculk aversion:</b> The Guardian refuses to walk on or near any sculk
+ *       family block (sculk, sculk vein, sensor, shrieker, catalyst). It will
+ *       reroute around sculk even mid-combat or mid-scout. See
+ *       {@link GuardianAvoidSculkGoal}.</li>
  *   <li><b>Neutral toward players:</b> The Guardian implements {@link NeutralMob} and
  *       will only attack players if provoked (i.e., attacked first).</li>
  *   <li><b>Monster aggression:</b> The Guardian actively hunts all hostile mobs
  *       (subclasses of {@link Monster}) except spiders.</li>
  *   <li><b>Ore scouting:</b> When a player right-clicks the Guardian with an ore item,
  *       the Guardian enters scouting mode and guides the player to the nearest matching
- *       vein. See {@link GuardianOreScoutGoal} for details.</li>
+ *       vein. Scouting is <em>never</em> interrupted by combat — the Guardian simply
+ *       ignores threats until it has finished pointing. See {@link GuardianOreScoutGoal}
+ *       for details.</li>
  * </ul>
  *
  * <h2>Ore Scouting</h2>
@@ -69,12 +84,15 @@ import java.util.Map;
  * such an item is offered, the Guardian consumes one unit from the stack, enters the
  * {@code SCOUTING} state, and begins pathfinding to the nearest matching ore block
  * within a configurable radius (see {@link GuardianOreScoutGoal#SEARCH_RADIUS}).
- * If a combat threat interrupts scouting, the goal stops immediately and the Guardian
- * reverts to combat behavior; the scouting state is cancelled.</p>
+ * Combat threats do <em>not</em> interrupt scouting; target-selection goals are
+ * suppressed while the {@code SCOUTING} flag is active. Once arrived, the Guardian
+ * turns to face the vein and raises its arm for {@link #POINTING_DURATION_TICKS} ticks
+ * before returning to its normal state.</p>
  *
  * <h2>Network Synchronization</h2>
- * The {@code ACTIVE} and {@code SCOUTING} flags are synchronized to the client so the
- * renderer can toggle between the "statue" idle pose and the walking animation.
+ * The {@code ACTIVE}, {@code SCOUTING}, {@code POINTING} flags and the
+ * {@code POINTING_TARGET} position are synchronized to the client so the renderer
+ * can drive the correct animation and compute the pointing direction.
  *
  * <h2>Inspiration</h2>
  * The model and animation set are borrowed from {@link Creaking},
@@ -84,9 +102,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
 
     public static final double DETECTION_RADIUS = 28.0;
     public static final float BASE_ATTACK_DAMAGE = 20.0F;
+    public static final int POINTING_DURATION_TICKS = 60;
+    public static final byte EVENT_GROUND_SLAM = 6;
+    public static final byte EVENT_PANIC = 7;
 
-    public final AnimationState attackAnimationState = new AnimationState();
-    public final AnimationState deathAnimationState = new AnimationState();
+    public final AnimationState attackAnimationState  = new AnimationState();
+    public final AnimationState deathAnimationState   = new AnimationState();
+    public final AnimationState pointAnimationState   = new AnimationState();
+    public final AnimationState groundSlamAnimationState = new AnimationState();
+    public final AnimationState panicAnimationState = new AnimationState();
 
     private static final UniformInt PERSISTENT_ANGER_TIME = TimeUtil.rangeOfSeconds(20, 39);
 
@@ -96,37 +120,55 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     private static final EntityDataAccessor<@NotNull Boolean> DATA_SCOUTING =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
 
+    private static final EntityDataAccessor<@NotNull Boolean> DATA_POINTING =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
+
+    private static final EntityDataAccessor<@NotNull BlockPos> DATA_POINTING_TARGET =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BLOCK_POS);
+
+    private static final EntityDataAccessor<@NotNull Byte> DATA_ORE_VARIANT =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BYTE);
+
+    private static final EntityDataAccessor<Boolean> DATA_PANICKING =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
+
     /**
      * Maps ore items (held by the player) to the block type the Guardian will search for.
-     *
-     * <p>Populate this map with every ore/raw-material item you want to support.
-     * Example entries (replace with your actual registry references):</p>
-     * <pre>{@code
-     *   Items.COAL          -> Blocks.COAL_ORE,
-     *   Items.RAW_IRON      -> Blocks.IRON_ORE,
-     *   Items.RAW_GOLD      -> Blocks.GOLD_ORE,
-     *   Items.DIAMOND       -> Blocks.DIAMOND_ORE,
-     *   ...
-     * }</pre>
      */
     private static final Map<Item, Block> ORE_ITEM_TO_BLOCK = Map.ofEntries(
-            Map.entry(Items.COAL, Blocks.COAL_ORE),
-            Map.entry(Items.RAW_IRON, Blocks.IRON_ORE),
-            Map.entry(Items.RAW_COPPER, Blocks.COPPER_ORE),
-            Map.entry(Items.RAW_GOLD, Blocks.GOLD_ORE),
-            Map.entry(Items.REDSTONE, Blocks.REDSTONE_ORE),
+            Map.entry(Items.COAL,         Blocks.COAL_ORE),
+            Map.entry(Items.RAW_IRON,     Blocks.IRON_ORE),
+            Map.entry(Items.RAW_COPPER,   Blocks.COPPER_ORE),
+            Map.entry(Items.RAW_GOLD,     Blocks.GOLD_ORE),
+            Map.entry(Items.REDSTONE,     Blocks.REDSTONE_ORE),
             Map.entry(Items.LAPIS_LAZULI, Blocks.LAPIS_ORE),
-            Map.entry(Items.DIAMOND, Blocks.DIAMOND_ORE),
-            Map.entry(Items.EMERALD, Blocks.EMERALD_ORE)
+            Map.entry(Items.DIAMOND,      Blocks.DIAMOND_ORE),
+            Map.entry(Items.EMERALD,      Blocks.EMERALD_ORE)
     );
 
     private long persistentAngerEndTime;
-    private int attackAnimationTicks;
+    private int  attackAnimationTicks;
     private boolean wasActive = false;
-    private int deathTime;
+    private boolean isPanicAnimPlaying = false;
+    private int  deathTime;
+    private int groundSlamAnimationTicks;
+
+    /** Server-side countdown (ticks) while the Guardian is pointing. */
+    private int pointingTicksRemaining = 0;
+
+    /** Position of the vein being pointed at, used to orient the Guardian. */
+    @Nullable private BlockPos pointingTarget = null;
 
     @Nullable private EntityReference<@NotNull LivingEntity> persistentAngerTarget;
     @Nullable private Block scoutBlock = null;
+    private GuardianGroundSlamGoal groundSlamGoal;
+
+    /**
+     * Set to {@code true} by {@link #hurt} when a {@link Warden} is the damage
+     * source. Consumed by {@link GuardianWardenFleeGoal}
+     * on the next tick to trigger the flee phase.
+     */
+    private boolean wardenFleeFlag = false;
 
     /**
      * Constructs a new Guardian of Stone.
@@ -141,12 +183,9 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Builds the default attribute map for the Guardian of Stone.
      *
-     * <p>These values are tuned to make the Guardian feel like an immovable
-     * force of nature — a living mountain rather than a simple golem.</p>
-     *
      * <ul>
      *   <li><b>Max health:</b> 220 HP (110 hearts)</li>
-     *   <li><b>Movement speed:</b> 0.18 — deliberately slower than before</li>
+     *   <li><b>Movement speed:</b> 0.18</li>
      *   <li><b>Attack damage:</b> {@value BASE_ATTACK_DAMAGE} HP per hit</li>
      *   <li><b>Knockback resistance:</b> 1.0 — total immunity</li>
      *   <li><b>Follow range:</b> 56 blocks</li>
@@ -170,14 +209,18 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * {@inheritDoc}
      *
-     * <p>Registers the {@link #DATA_ACTIVE} and {@link #DATA_SCOUTING} flags so they
-     * are automatically synchronized between server and client.</p>
+     * <p>Registers {@link #DATA_ACTIVE}, {@link #DATA_SCOUTING}, {@link #DATA_POINTING},
+     * and {@link #DATA_POINTING_TARGET} for automatic client synchronization.</p>
      */
     @Override
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_ACTIVE, false);
         builder.define(DATA_SCOUTING, false);
+        builder.define(DATA_POINTING,false);
+        builder.define(DATA_POINTING_TARGET, BlockPos.ZERO);
+        builder.define(DATA_ORE_VARIANT, OreVariant.NONE.toId());
+        builder.define(DATA_PANICKING, false);
     }
 
     public static boolean checkSpawnRules(
@@ -190,34 +233,57 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         return pos.getY() <= 40 && checkMobSpawnRules(type, level, reason, pos, random);
     }
 
+    @Override
+    public @Nullable SpawnGroupData finalizeSpawn(@NotNull ServerLevelAccessor level,
+                                                  @NotNull DifficultyInstance difficulty,
+                                                  @NotNull EntitySpawnReason spawnReason,
+                                                  @Nullable SpawnGroupData groupData) {
+        this.setOreVariant(OreVariant.random(this.getRandom()));
+        return super.finalizeSpawn(level, difficulty, spawnReason, groupData);
+    }
+
     /**
      * {@inheritDoc}
      *
      * <p>Goal priority list (lower index = higher priority):
      * <ol>
      *   <li>Float on water — prevents drowning.</li>
-     *   <li>Melee attack — only executes while {@link #isActive()}.</li>
+     *   <li>Warden flee — forces dormancy near a Warden; overrides everything.</li>
+     *   <li>Avoid sculk — steers the Guardian away from all sculk-family blocks.</li>
+     *   <li>Melee attack — only executes while {@link #isActive()} and not scouting.</li>
      *   <li>Ore scouting — guides the player toward an ore vein when in scouting mode.</li>
      *   <li>Wander within home territory — only while active.</li>
      * </ol>
-     * Target selector priority list:
+     * Target selector priority list (all suppressed while scouting):
      * <ol>
-     *   <li>Retaliate against whoever hurt the Guardian.</li>
+     *   <li>Retaliate against whoever hurt the Guardian (Wardens excluded).</li>
      *   <li>Attack an angry-at player.</li>
-     *   <li>Hunt the nearest non-spider hostile mob.</li>
+     *   <li>Hunt the nearest non-spider, non-warden hostile mob.</li>
      * </ol>
      * </p>
      */
     @Override
     protected void registerGoals() {
+        this.goalSelector.addGoal(0, new GuardianWardenFleeGoal(this));
         this.goalSelector.addGoal(1, new FloatGoal(this));
+        this.goalSelector.addGoal(1, new GuardianAvoidSculkGoal(this));
+
+        this.groundSlamGoal = new GuardianGroundSlamGoal(this);
+        this.goalSelector.addGoal(1, groundSlamGoal);
+
         this.goalSelector.addGoal(2, new GuardianMeleeAttackGoal(this));
         this.goalSelector.addGoal(3, new GuardianOreScoutGoal(this));
         this.goalSelector.addGoal(5, new GuardianWanderGoal(this));
 
-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
+        this.targetSelector.addGoal(1, new HurtByTargetGoal(this) {
+            @Override public boolean canUse()           { return !GuardianOfStoneEntity.this.isScouting() && super.canUse(); }
+            @Override public boolean canContinueToUse() { return !GuardianOfStoneEntity.this.isScouting() && super.canContinueToUse(); }
+        }.setAlertOthers());
         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false,
-                this::isAngryAt));
+                this::isAngryAt) {
+            @Override public boolean canUse()           { return !GuardianOfStoneEntity.this.isScouting() && super.canUse(); }
+            @Override public boolean canContinueToUse() { return !GuardianOfStoneEntity.this.isScouting() && super.canContinueToUse(); }
+        });
         this.targetSelector.addGoal(3, new GuardianNearestMonsterGoal(this));
     }
 
@@ -228,7 +294,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      * <ol>
      *   <li>Decrements the attack-animation counter.</li>
      *   <li><i>(Server only)</i> Refreshes its active state by scanning for nearby threats.</li>
-     *   <li><i>(Server only)</i> If a combat threat arises during scouting, cancels scouting.</li>
+     *   <li><i>(Server only)</i> Ticks the pointing countdown when pointing.</li>
      *   <li><i>(Server only)</i> Advances the persistent-anger timer.</li>
      *   <li><i>(Server only)</i> Forces a target-selector tick immediately on wake-up.</li>
      *   <li><i>(Client only)</i> Drives the attack {@link AnimationState}.</li>
@@ -247,8 +313,27 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
             this.updateActiveState();
             this.updatePersistentAnger((ServerLevel) this.level(), true);
 
-            if (this.isScouting() && this.getTarget() != null) {
-                this.stopScouting(false);
+            if (this.groundSlamGoal != null){
+                this.groundSlamGoal.tickCooldown();
+            }
+
+            if (this.isPointing()) {
+                this.pointingTicksRemaining--;
+
+                if (this.pointingTarget != null) {
+                    double dx = this.pointingTarget.getX() + 0.5 - this.getX();
+                    assert this.pointingTarget != null;
+                    double dz = this.pointingTarget.getZ() + 0.5 - this.getZ();
+                    float desiredYRot = (float)(Math.atan2(-dx, dz) * (180.0 / Math.PI));
+                    this.setYRot(desiredYRot);
+                    this.yBodyRot = desiredYRot;
+                    this.yHeadRot = desiredYRot;
+                }
+
+                if (this.pointingTicksRemaining <= 0) {
+                    this.stopPointing();
+                    this.stopScouting(true);
+                }
             }
 
             boolean nowActive = this.isActive();
@@ -262,6 +347,11 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
             if (this.attackAnimationTicks <= 0) {
                 this.attackAnimationState.stop();
             }
+
+            if (!this.isPanicking() && this.isPanicAnimPlaying) {
+                this.panicAnimationState.stop();
+                this.isPanicAnimPlaying = false;
+            }
         }
     }
 
@@ -270,19 +360,26 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      *
      * <p>The Guardian wakes up when at least one hostile entity (excluding spiders)
      * is within {@link #DETECTION_RADIUS} blocks, or when it already has a current
-     * attack target, or when it is in scouting mode (so it can move toward the vein).
-     * It returns to dormancy once all threats have left the area and its anger has
-     * expired — and it is not scouting.</p>
+     * attack target, or when it is in scouting / pointing mode, or when sculk
+     * blocks are nearby (so {@link GuardianAvoidSculkGoal} can move it away).</p>
+     *
+     * <p>If a {@link Warden} is within {@link GuardianWardenFleeGoal#DETECT_RADIUS}
+     * blocks, this method does nothing — {@link GuardianWardenFleeGoal} owns the
+     * active state in that situation and must not be overridden.</p>
      */
     private void updateActiveState() {
+        if (hasNearbyWarden()) return;
+
         boolean shouldBeActive = this.getTarget() != null
                 || this.hasNearbyThreat()
-                || this.isScouting();
+                || this.isScouting()
+                || this.isPointing()
+                || GuardianAvoidSculkGoal.hasSculkNearby(this);
 
         if (shouldBeActive != this.isActive()) {
             this.setActive(shouldBeActive);
 
-            if (shouldBeActive && this.getTarget() == null && !this.isScouting()) {
+            if (shouldBeActive && this.getTarget() == null && !this.isScouting() && !this.isPointing()) {
                 LivingEntity nearestThreat = this.level().getEntitiesOfClass(
                         LivingEntity.class,
                         this.getBoundingBox().inflate(DETECTION_RADIUS),
@@ -294,6 +391,21 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
                 this.setTarget(nearestThreat);
             }
         }
+    }
+
+    /**
+     * Returns {@code true} if at least one living {@link Warden} is within
+     * {@link GuardianWardenFleeGoal#DETECT_RADIUS} blocks.
+     *
+     * <p>Used by {@link #updateActiveState()} to yield control of the active flag
+     * entirely to {@link GuardianWardenFleeGoal} whenever a Warden is present.</p>
+     */
+    private boolean hasNearbyWarden() {
+        return !this.level().getEntitiesOfClass(
+                Warden.class,
+                this.getBoundingBox().inflate(GuardianWardenFleeGoal.DETECT_RADIUS),
+                LivingEntity::isAlive
+        ).isEmpty();
     }
 
     /**
@@ -319,6 +431,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     public boolean isThreat(@NotNull LivingEntity entity, @NotNull GuardianOfStoneEntity guardian) {
         if (entity == guardian) return false;
         if (entity instanceof Spider) return false;
+        if (entity instanceof Warden) return false;
         return switch (entity) {
             case Monster monster -> true;
             case Player player -> this.isAngryAt(player, (ServerLevel) this.level());
@@ -331,7 +444,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      * Handles player interaction with the Guardian.
      *
      * <p>If the player right-clicks with an item present in {@link #ORE_ITEM_TO_BLOCK}
-     * and the Guardian is not currently scouting or fighting, the Guardian:
+     * and the Guardian is not currently scouting or pointing, the Guardian:
      * <ol>
      *   <li>Consumes one item from the held stack (the "payment").</li>
      *   <li>Plays a stone-step acknowledgement sound.</li>
@@ -350,12 +463,11 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         Block targetBlock = ORE_ITEM_TO_BLOCK.get(held.getItem());
         if (targetBlock == null) return InteractionResult.PASS;
 
-        if (this.getTarget() != null || this.isScouting()) return InteractionResult.PASS;
+        if (this.getTarget() != null || this.isScouting() || this.isPointing()) return InteractionResult.PASS;
 
         held.shrink(1);
 
         this.playSound(SoundEvents.STONE_STEP, 1.5F, 0.6F);
-        player.sendSystemMessage(Component.translatable("entity.guardian_of_stone.scout_start"));
 
         this.startScouting(held.getItem(), targetBlock);
         return InteractionResult.CONSUME;
@@ -364,11 +476,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     /**
      * Enters scouting mode for the given ore type.
      *
-     * <p>Sets the synced {@code SCOUTING} flag to {@code true} and stores the target
-     * block so {@link GuardianOreScoutGoal} can retrieve it.</p>
-     *
-     * @param item        the ore item that was handed to the Guardian (used for future
-     *                    reference if needed)
+     * @param item        the ore item that was handed to the Guardian
      * @param targetBlock the ore block the Guardian should search for
      */
     public void startScouting(@NotNull Item item, @NotNull Block targetBlock) {
@@ -382,8 +490,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
      * <p>Called by {@link GuardianOreScoutGoal} upon arrival at the vein ({@code success
      * = true}) or on failure/interruption ({@code success = false}).</p>
      *
-     * @param success {@code true} if the Guardian found and reached the vein;
-     *                {@code false} if it gave up or was interrupted
+     * @param success {@code true} if the Guardian found and reached the vein
      */
     public void stopScouting(boolean success) {
         this.scoutBlock = null;
@@ -395,10 +502,50 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     }
 
     /**
-     * Returns whether the Guardian is currently in scouting mode.
+     * Enters the pointing pose: the Guardian freezes, faces the vein, and raises
+     * its arm for {@link #POINTING_DURATION_TICKS} ticks.
      *
-     * @return {@code true} if scouting
+     * <p>Called by {@link GuardianOreScoutGoal} when it arrives at the vein —
+     * <em>before</em> {@link #stopScouting(boolean)} so the {@code SCOUTING} flag
+     * remains active (and therefore keeps combat goals suppressed) until the pose
+     * is over.</p>
+     *
+     * @param veinPos the block position of the found ore vein
      */
+    public void startPointing(@NotNull BlockPos veinPos) {
+        this.pointingTarget         = veinPos;
+        this.pointingTicksRemaining = POINTING_DURATION_TICKS;
+        this.entityData.set(DATA_POINTING,        true);
+        this.entityData.set(DATA_POINTING_TARGET, veinPos);
+        this.getNavigation().stop();
+        this.level().broadcastEntityEvent(this, (byte) 5);
+    }
+
+    /**
+     * Exits the pointing pose and clears the stored vein position.
+     */
+    public void stopPointing() {
+        this.pointingTarget = null;
+        this.entityData.set(DATA_POINTING,        false);
+        this.entityData.set(DATA_POINTING_TARGET, BlockPos.ZERO);
+    }
+
+    /** @return {@code true} if the Guardian is currently in the pointing pose */
+    public boolean isPointing() {
+        return this.entityData.get(DATA_POINTING);
+    }
+
+    /**
+     * Returns the synchronized position of the ore vein the Guardian is pointing at.
+     * Safe to call on both server and client.
+     *
+     * @return the vein {@link BlockPos}, or {@link BlockPos#ZERO} if not pointing
+     */
+    public @NotNull BlockPos getPointingTarget() {
+        return this.entityData.get(DATA_POINTING_TARGET);
+    }
+
+    /** @return {@code true} if the Guardian is currently in scouting mode */
     public boolean isScouting() {
         return this.entityData.get(DATA_SCOUTING);
     }
@@ -413,6 +560,15 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         return this.scoutBlock;
     }
 
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        if (source.getEntity() instanceof Warden) {
+            this.wardenFleeFlag = true;
+        }
+        return super.hurtServer(level, source, damage);
+    }
 
     /** {@inheritDoc} */
     @Override
@@ -433,6 +589,14 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
             this.attackAnimationState.start(this.tickCount);
         } else if (id == 3) {
             this.deathAnimationState.start(this.tickCount);
+        } else if (id == 5) {
+            this.pointAnimationState.start(this.tickCount);
+        } else if (id == EVENT_GROUND_SLAM) {
+            this.groundSlamAnimationTicks = GuardianGroundSlamGoal.WINDUP_TICKS + GuardianGroundSlamGoal.RECOVERY_TICKS;
+            this.groundSlamAnimationState.start(this.tickCount);
+        } else if (id == EVENT_PANIC) {
+            this.panicAnimationState.start(this.tickCount);
+            this.isPanicAnimPlaying = true;
         } else {
             super.handleEntityEvent(id);
         }
@@ -481,14 +645,19 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     protected void addAdditionalSaveData(@NotNull ValueOutput output) {
         super.addAdditionalSaveData(output);
         this.addPersistentAngerSaveData(output);
+        output.putByte("OreVariant", getOreVariant().toId());
     }
 
     @Override
     public void readAdditionalSaveData(@NotNull ValueInput input) {
         super.readAdditionalSaveData(input);
         this.readPersistentAngerSaveData(this.level(), input);
+        setOreVariant(OreVariant.fromId(input.getByteOr("OreVariant", OreVariant.NONE.toId())));
     }
 
+
+    public boolean isCurrentlyFleingWarden() { return this.wardenFleeFlag; }
+    public void clearWardenFleeFlag()        { this.wardenFleeFlag = false; }
 
     /**
      * Returns whether the Guardian is currently in its active (awakened) state.
@@ -557,6 +726,25 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         if (this.deathTime >= 30) {
             this.level().broadcastEntityEvent(this, (byte) 60);
             this.remove(RemovalReason.KILLED);
+        }
+    }
+
+    public OreVariant getOreVariant() {
+        return OreVariant.fromId(this.entityData.get(DATA_ORE_VARIANT));
+    }
+
+    public void setOreVariant(OreVariant variant) {
+        this.entityData.set(DATA_ORE_VARIANT, variant.toId());
+    }
+
+    public boolean isPanicking() {
+        return this.entityData.get(DATA_PANICKING);
+    }
+
+    public void setPanicking(boolean panicking) {
+        this.entityData.set(DATA_PANICKING, panicking);
+        if (panicking) {
+            this.level().broadcastEntityEvent(this, EVENT_PANIC);
         }
     }
 }

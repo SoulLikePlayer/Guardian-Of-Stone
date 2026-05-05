@@ -1,8 +1,10 @@
 package net.guardian_of_stone.client.model.entity;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.guardian_of_stone.client.animation.GuardianOfStoneAnimation;
 import net.guardian_of_stone.client.renderer.entity.state.GuardianOfStoneEntityRenderState;
 import net.minecraft.client.animation.KeyframeAnimation;
+import net.minecraft.client.animation.KeyframeAnimations;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -10,28 +12,41 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
+
+import static net.guardian_of_stone.client.animation.GuardianOfStoneAnimation.GUARDIAN_PANIC;
+import static net.guardian_of_stone.client.animation.GuardianOfStoneAnimation.GUARDIAN_WALK;
 
 public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneEntityRenderState> {
 
     private final ModelPart head;
     private final ModelPart upperBody;
+    private final ModelPart rightArm;
 
     private final KeyframeAnimation walkAnimation;
+    private final KeyframeAnimation panicAnimation;
     private final KeyframeAnimation attackAnimation;
     private final KeyframeAnimation deathAnimation;
+    private final KeyframeAnimation pointAnimation;
+    private final KeyframeAnimation groundSlamAnimation;
 
     public GuardianOfStoneModel(ModelPart roots) {
         super(roots);
         ModelPart root = roots.getChild("root");
         this.upperBody = root.getChild("upper_body");
         this.head = this.upperBody.getChild("head");
+        this.rightArm = this.upperBody.getChild("right_arm");
 
-        this.walkAnimation   = GuardianOfStoneAnimation.GUARDIAN_WALK.bake(root);
+        this.walkAnimation   = GUARDIAN_WALK.bake(root);
+        this.panicAnimation  = GUARDIAN_PANIC.bake(root);
         this.attackAnimation = GuardianOfStoneAnimation.GUARDIAN_ATTACK.bake(root);
-        this.deathAnimation  = GuardianOfStoneAnimation.GUARDIAN_DEATH.bake(root); // ← corrigé
+        this.deathAnimation  = GuardianOfStoneAnimation.GUARDIAN_DEATH.bake(root);
+        this.pointAnimation = GuardianOfStoneAnimation.GUARDIAN_POINT.bake(root);
+        this.groundSlamAnimation = GuardianOfStoneAnimation.GUARDIAN_GROUND_SLAM.bake(root);
     }
 
 
@@ -87,19 +102,20 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneEn
         return LayerDefinition.create(createMesh(), 64, 64);
     }
 
-    public static LayerDefinition createEyesLayer() {
-        MeshDefinition mesh = createMesh();
-        mesh.getRoot().retainExactParts(Set.of("head"));
-        return LayerDefinition.create(mesh, 64, 64);
-    }
-
     @Override
     public void setupAnim(@NotNull GuardianOfStoneEntityRenderState state) {
         super.setupAnim(state);
         this.head.xRot = state.xRot * ((float) Math.PI / 180F);
         this.head.yRot = state.yRot * ((float) Math.PI / 180F);
 
-        if (state.canMove) {
+        if (state.isPanicking) {
+            this.panicAnimation.applyWalk(
+                    state.walkAnimationPos,
+                    state.walkAnimationSpeed,
+                    1.0F,
+                    1.0F
+            );
+        } else if (state.canMove) {
             this.walkAnimation.applyWalk(
                     state.walkAnimationPos,
                     state.walkAnimationSpeed,
@@ -108,7 +124,25 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneEn
             );
         }
 
+        float epsilon = 0.001F;
+        boolean hasArmMotion  = Math.abs(state.smoothArmYaw)   > epsilon
+                || Math.abs(state.smoothArmPitch)  > epsilon;
+        boolean hasHeadMotion = Math.abs(state.smoothHeadYaw)  > epsilon
+                || Math.abs(state.smoothHeadPitch) > epsilon;
+
+        if (state.isPointing || hasArmMotion) {
+            this.rightArm.yRot = state.smoothArmYaw;
+            this.rightArm.xRot = state.smoothArmPitch - (float)(Math.PI / 2.0);
+        }
+
+        if (state.isPointing || hasHeadMotion) {
+            this.head.yRot = state.yRot * ((float) Math.PI / 180F) + state.smoothHeadYaw;
+            this.head.xRot = state.xRot * ((float) Math.PI / 180F) + state.smoothHeadPitch;
+        }
+
         this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
         this.deathAnimation.apply(state.deathAnimationState, state.ageInTicks);
+        this.pointAnimation.apply(state.pointAnimationState, state.ageInTicks);
+        this.groundSlamAnimation.apply(state.groundSlamAnimationState, state.ageInTicks);
     }
 }

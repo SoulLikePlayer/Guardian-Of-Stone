@@ -1,5 +1,6 @@
 package net.guardian_of_stone.client.renderer.entity.state;
 
+import net.guardian_of_stone.world.entitites.OreVariant;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.AnimationState;
 
@@ -36,6 +37,8 @@ public class GuardianOfStoneEntityRenderState extends LivingEntityRenderState {
      * renderer copies the reference each frame.</p>
      */
     public final AnimationState attackAnimationState = new AnimationState();
+    public final AnimationState groundSlamAnimationState = new AnimationState();
+    public final AnimationState panicAnimationState = new AnimationState();
 
     /**
      * Animation state for the death sequence.
@@ -52,4 +55,26 @@ public class GuardianOfStoneEntityRenderState extends LivingEntityRenderState {
      */
     public boolean canMove;
     public int hurtTime;
+    public final AnimationState pointAnimationState = new AnimationState();
+
+    /** Raw target yaw/pitch toward the ore block (world-space, radians). */
+    public float pointingYaw   = 0.0F;
+    public float pointingPitch = 0.0F;
+    public boolean isPointing  = false;
+    public boolean isScouting = false;
+    public boolean isPanicking = false;
+
+    /**
+     * Smoothed arm yaw/pitch, updated every frame with a lerp so the arm
+     * glides toward the target instead of snapping.
+     */
+    public float smoothArmYaw   = 0.0F;
+    public float smoothArmPitch = 0.0F;
+
+    /**
+     * Smoothed head yaw/pitch for the same reason.
+     */
+    public float smoothHeadYaw   = 0.0F;
+    public float smoothHeadPitch = 0.0F;
+    public OreVariant oreVariant = OreVariant.NONE;
 }

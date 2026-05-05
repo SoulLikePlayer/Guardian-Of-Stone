@@ -1,10 +1,10 @@
-package net.guardian_of_stone.world.entitites.ai.goals;
+package net.guardian_of_stone.world.entitites.ai.goals.attack;
 
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
-import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.spider.Spider;
+import net.minecraft.world.entity.monster.warden.Warden;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -30,6 +30,8 @@ public class GuardianNearestMonsterGoal extends NearestAttackableTargetGoal<@Not
      * @param guardian the Guardian that will use this goal
      */
     public GuardianNearestMonsterGoal(GuardianOfStoneEntity guardian) {
-        super(guardian, Monster.class, 0, true,false, (livingEntity, serverLevel) -> (!(livingEntity instanceof Spider)) );
+        super(guardian, Monster.class, 0, true, false,
+                (livingEntity, serverLevel) -> !(livingEntity instanceof Spider)
+                        && !(livingEntity instanceof Warden));
     }
 }
