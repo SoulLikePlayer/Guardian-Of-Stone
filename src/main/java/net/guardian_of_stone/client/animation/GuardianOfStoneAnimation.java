@@ -111,7 +111,6 @@ public class GuardianOfStoneAnimation {
             )
             .build();
 
-    // ── Attack ────────────────────────────────────────────────────────────────
 
     public static final AnimationDefinition GUARDIAN_ATTACK = AnimationDefinition.Builder
             .withLength(1.0F)
@@ -141,7 +140,6 @@ public class GuardianOfStoneAnimation {
             )
             .build();
 
-    // ── Death ─────────────────────────────────────────────────────────────────
 
     /**
      * "L'Effondrement Tectonique" — a three-phase collapse. Total: 1.5 s (30 ticks).
@@ -373,5 +371,4 @@ public class GuardianOfStoneAnimation {
                     )
             )
             .build();
-
 }

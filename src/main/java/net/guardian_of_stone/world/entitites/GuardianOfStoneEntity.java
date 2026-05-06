@@ -163,12 +163,7 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
     @Nullable private Block scoutBlock = null;
     private GuardianGroundSlamGoal groundSlamGoal;
 
-    /**
-     * Set to {@code true} by {@link #hurt} when a {@link Warden} is the damage
-     * source. Consumed by {@link GuardianWardenFleeGoal}
-     * on the next tick to trigger the flee phase.
-     */
-    private boolean wardenFleeFlag = false;
+
 
     /**
      * Constructs a new Guardian of Stone.
@@ -563,15 +558,6 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
 
     /** {@inheritDoc} */
     @Override
-    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-        if (source.getEntity() instanceof Warden) {
-            this.wardenFleeFlag = true;
-        }
-        return super.hurtServer(level, source, damage);
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public boolean doHurtTarget(@NotNull ServerLevel level, @NotNull Entity target) {
         if (!(target instanceof LivingEntity)) return false;
 
@@ -655,9 +641,6 @@ public class GuardianOfStoneEntity extends PathfinderMob implements NeutralMob {
         setOreVariant(OreVariant.fromId(input.getByteOr("OreVariant", OreVariant.NONE.toId())));
     }
 
-
-    public boolean isCurrentlyFleingWarden() { return this.wardenFleeFlag; }
-    public void clearWardenFleeFlag()        { this.wardenFleeFlag = false; }
 
     /**
      * Returns whether the Guardian is currently in its active (awakened) state.

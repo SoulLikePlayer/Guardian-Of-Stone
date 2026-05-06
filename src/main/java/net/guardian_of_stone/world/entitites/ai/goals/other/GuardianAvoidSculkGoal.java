@@ -3,6 +3,7 @@ package net.guardian_of_stone.world.entitites.ai.goals.other;
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.level.Level;
@@ -57,6 +58,9 @@ public class GuardianAvoidSculkGoal extends Goal {
 
     private int pathRecalcCounter = 0;
 
+    private static final double BASE_SPEED = 0.18;
+    private static final double FLEE_SPEED_BOOST = 0.30;
+
     /**
      * Constructs the goal.
      *
@@ -104,6 +108,7 @@ public class GuardianAvoidSculkGoal extends Goal {
         this.pathRecalcCounter = 0;
         this.guardian.setTarget(null);
         this.guardian.setPanicking(true);
+        applyFleeSpeed();
         recalculateFleePath();
     }
 
@@ -122,6 +127,7 @@ public class GuardianAvoidSculkGoal extends Goal {
     public void stop() {
         this.pathRecalcCounter = 0;
         this.guardian.setPanicking(false);
+        resetSpeed();
     }
 
     /**
@@ -215,5 +221,15 @@ public class GuardianAvoidSculkGoal extends Goal {
                     FLEE_SPEED
             );
         }
+    }
+
+    private void applyFleeSpeed() {
+        var attr = this.guardian.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (attr != null) attr.setBaseValue(FLEE_SPEED_BOOST);
+    }
+
+    private void resetSpeed() {
+        var attr = this.guardian.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (attr != null) attr.setBaseValue(BASE_SPEED);
     }
 }

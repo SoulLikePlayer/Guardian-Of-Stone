@@ -1,10 +1,8 @@
 package net.guardian_of_stone.client.model.entity;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.guardian_of_stone.client.animation.GuardianOfStoneAnimation;
 import net.guardian_of_stone.client.renderer.entity.state.GuardianOfStoneEntityRenderState;
 import net.minecraft.client.animation.KeyframeAnimation;
-import net.minecraft.client.animation.KeyframeAnimations;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -12,11 +10,7 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Set;
 
 import static net.guardian_of_stone.client.animation.GuardianOfStoneAnimation.GUARDIAN_PANIC;
 import static net.guardian_of_stone.client.animation.GuardianOfStoneAnimation.GUARDIAN_WALK;
