@@ -36,5 +36,4 @@ public class GuardianOfStoneClient {
                 GuardianOfStoneModel::createBodyLayer
         );
     }
-
 }

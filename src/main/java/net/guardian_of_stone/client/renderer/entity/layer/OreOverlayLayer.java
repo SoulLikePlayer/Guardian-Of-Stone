@@ -11,10 +11,9 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
-public class OreOverlayLayer
-        extends RenderLayer<GuardianOfStoneEntityRenderState, GuardianOfStoneModel> {
+public class OreOverlayLayer extends RenderLayer<@NotNull GuardianOfStoneEntityRenderState, @NotNull GuardianOfStoneModel> {
 
-    public OreOverlayLayer(RenderLayerParent<GuardianOfStoneEntityRenderState, GuardianOfStoneModel> parent) {
+    public OreOverlayLayer(RenderLayerParent<@NotNull GuardianOfStoneEntityRenderState, @NotNull GuardianOfStoneModel> parent) {
         super(parent);
     }
 

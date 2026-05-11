@@ -34,9 +34,9 @@ import java.util.List;
  *
  * <h2>Timing (ticks)</h2>
  * <pre>
- *   0 ──── WINDUP_TICKS (30) ──── impact ──── RECOVERY_TICKS (15) ──── goal ends
+ *   0 ── WINDUP_TICKS (10) ── impact ──────────── RECOVERY_TICKS (35) ──── goal ends
  * </pre>
- * <p>The impact (knockback + damage) fires at tick {@value #WINDUP_TICKS}.
+ * <p>The impact (knockback + damage) fires at tick {@value #WINDUP_TICKS} (0.5 s), the exact moment both fists hit the ground in the animation.
  * The goal holds control for {@code WINDUP_TICKS + RECOVERY_TICKS} total before
  * returning. Movement is locked throughout via the {@code Flag.MOVE} flag.</p>
  *
@@ -45,14 +45,15 @@ import java.util.List;
  * is broadcast so the client can fire the
  * {@link net.guardian_of_stone.client.animation.GuardianOfStoneAnimation#GUARDIAN_GROUND_SLAM}
  * animation. The animation length matches {@code WINDUP_TICKS + RECOVERY_TICKS}
- * (45 ticks = 2.25 s) precisely.</p>
+ * (45 ticks = 2.25 s) precisely. The visual impact keyframe sits at 0.50 s,
+ * aligned with {@code WINDUP_TICKS = 10}.</p>
  */
 public class GuardianGroundSlamGoal extends Goal {
     public static final int MIN_ENEMIES_TO_TRIGGER = 3;
     public static final double DETECT_RADIUS = 2.0;
-    public static final int COOLDOWN_TICKS = 200;   // 10 s
-    public static final int WINDUP_TICKS = 30;      // 1.5 s
-    public static final int RECOVERY_TICKS = 15;    // 0.75 s
+    public static final int COOLDOWN_TICKS = 200;
+    public static final int WINDUP_TICKS = 10;
+    public static final int RECOVERY_TICKS = 35;
     private static final double KNOCKBACK_STRENGTH = 2.2;
     private static final double KNOCKBACK_UP = 0.45;
     private static final float SLAM_DAMAGE = 8.0F;

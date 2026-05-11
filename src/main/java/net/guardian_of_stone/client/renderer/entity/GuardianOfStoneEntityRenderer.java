@@ -1,21 +1,16 @@
 package net.guardian_of_stone.client.renderer.entity;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.guardian_of_stone.client.GuardianOfStoneClient;
 import net.guardian_of_stone.client.model.entity.GuardianOfStoneModel;
 import net.guardian_of_stone.client.renderer.entity.layer.OreOverlayLayer;
 import net.guardian_of_stone.client.renderer.entity.state.GuardianOfStoneEntityRenderState;
 import net.guardian_of_stone.core.GuardianOfStone;
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
-import net.guardian_of_stone.world.entitites.OreVariant;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.level.block.Block;
 import org.jetbrains.annotations.NotNull;
-import net.guardian_of_stone.world.entitites.OreVariant;
 
 public class GuardianOfStoneEntityRenderer<T extends GuardianOfStoneEntity>
         extends MobRenderer<@NotNull T, @NotNull GuardianOfStoneEntityRenderState, @NotNull GuardianOfStoneModel> {
@@ -51,10 +46,9 @@ public class GuardianOfStoneEntityRenderer<T extends GuardianOfStoneEntity>
         state.deathTime = 0.0F;
         state.hurtTime  = 0;
 
-        state.isPointing = entity.isPointing();
-        state.isScouting = entity.isScouting();
+        state.isPointing  = entity.isPointing();
+        state.isScouting  = entity.isScouting();
         state.isPanicking = entity.isPanicking();
-
 
         state.oreVariant = entity.getOreVariant();
 
@@ -78,30 +72,30 @@ public class GuardianOfStoneEntityRenderer<T extends GuardianOfStoneEntity>
 
             float rawPitch = (float) -Math.atan2(dy, hDist);
 
-            state.pointingYaw = rawYaw;
+            state.pointingYaw   = rawYaw;
             state.pointingPitch = rawPitch;
 
             float lerpArm  = 0.18F;
-            this.smoothArmYaw = lerpAngle(this.smoothArmYaw,   rawYaw,   lerpArm);
+            this.smoothArmYaw   = lerpAngle(this.smoothArmYaw,   rawYaw,   lerpArm);
             this.smoothArmPitch = lerpAngle(this.smoothArmPitch, rawPitch, lerpArm);
 
             float lerpHead = 0.12F;
-            this.smoothHeadYaw = lerpAngle(this.smoothHeadYaw,   rawYaw   * 0.5F, lerpHead);
+            this.smoothHeadYaw   = lerpAngle(this.smoothHeadYaw,   rawYaw   * 0.5F, lerpHead);
             this.smoothHeadPitch = lerpAngle(this.smoothHeadPitch, rawPitch * 0.4F, lerpHead);
         } else {
             state.pointingYaw   = 0.0F;
             state.pointingPitch = 0.0F;
 
             float lerpOut = 0.10F;
-            this.smoothArmYaw = lerpAngle(this.smoothArmYaw,    0.0F, lerpOut);
-            this.smoothArmPitch = lerpAngle(this.smoothArmPitch,  0.0F, lerpOut);
-            this.smoothHeadYaw = lerpAngle(this.smoothHeadYaw,   0.0F, lerpOut);
+            this.smoothArmYaw   = lerpAngle(this.smoothArmYaw,   0.0F, lerpOut);
+            this.smoothArmPitch = lerpAngle(this.smoothArmPitch, 0.0F, lerpOut);
+            this.smoothHeadYaw  = lerpAngle(this.smoothHeadYaw,  0.0F, lerpOut);
             this.smoothHeadPitch = lerpAngle(this.smoothHeadPitch, 0.0F, lerpOut);
         }
 
-        state.smoothArmYaw = this.smoothArmYaw;
+        state.smoothArmYaw   = this.smoothArmYaw;
         state.smoothArmPitch = this.smoothArmPitch;
-        state.smoothHeadYaw = this.smoothHeadYaw;
+        state.smoothHeadYaw  = this.smoothHeadYaw;
         state.smoothHeadPitch = this.smoothHeadPitch;
     }
 

@@ -26,6 +26,7 @@ import net.minecraft.world.entity.AnimationState;
  *   <dt>{@link #canMove}</dt>
  *   <dd>{@code true} when the Guardian is active (awake). The model uses this
  *       to decide whether to play the walk cycle.</dd>
+ *
  * </dl>
  */
 public class GuardianOfStoneEntityRenderState extends LivingEntityRenderState {
@@ -76,5 +77,6 @@ public class GuardianOfStoneEntityRenderState extends LivingEntityRenderState {
      */
     public float smoothHeadYaw   = 0.0F;
     public float smoothHeadPitch = 0.0F;
+
     public OreVariant oreVariant = OreVariant.NONE;
 }

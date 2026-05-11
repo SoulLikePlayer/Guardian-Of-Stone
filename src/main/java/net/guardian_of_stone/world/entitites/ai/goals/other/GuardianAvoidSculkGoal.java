@@ -134,7 +134,7 @@ public class GuardianAvoidSculkGoal extends Goal {
      * Returns {@code true} if at least one sculk block is within {@value #SCAN_RADIUS}
      * blocks of {@code guardian}.
      *
-     * <p>Called by {@link net.guardian_of_stone.world.entitites.GuardianOfStoneEntity#updateActiveState()}
+     * <p>Called by {@link GuardianOfStoneEntity#updateActiveState()}
      * so the entity can include sculk proximity in its active-state calculation without
      * coupling itself to the goal instance.</p>
      */
@@ -157,7 +157,7 @@ public class GuardianAvoidSculkGoal extends Goal {
     /**
      * Scans the world in concentric horizontal rings around the Guardian's feet,
      * returning the closest block position whose {@link BlockState} matches
-     * {@link net.guardian_of_stone.world.entitites.GuardianOfStoneEntity#getScoutBlock()}.
+     * {@link GuardianOfStoneEntity#getScoutBlock()}.
      *
      * @return average sculk position, or {@code null} if the area is sculk-free
      */

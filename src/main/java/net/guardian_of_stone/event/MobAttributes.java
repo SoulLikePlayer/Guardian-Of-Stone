@@ -4,7 +4,6 @@ import net.guardian_of_stone.core.GuardianOfStone;
 import net.guardian_of_stone.world.entitites.GuardianOfStoneEntity;
 import net.guardian_of_stone.world.entitites.ModEntities;
 import net.minecraft.world.entity.SpawnPlacementTypes;
-import net.minecraft.world.entity.monster.creaking.Creaking;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
