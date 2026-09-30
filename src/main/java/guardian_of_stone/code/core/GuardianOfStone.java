@@ -1,5 +1,6 @@
 package guardian_of_stone.code.core;
 
+import guardian_of_stone.code.world.entity.ModEntity;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -14,6 +15,6 @@ public class GuardianOfStone {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public GuardianOfStone(IEventBus modEventBus, ModContainer modContainer) {
-
+        ModEntity.ENTITY_TYPES.register(modEventBus);
     }
 }
