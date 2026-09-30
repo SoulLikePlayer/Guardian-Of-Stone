@@ -1,0 +1,13 @@
+{
+  "itemGroup.guardianofstone": "Example Mod Tab",
+  "block.guardianofstone.example_block": "Example Block",
+  "item.guardianofstone.example_item": "Example Item",
+
+  "guardianofstone.configuration.title": "Guardian Of Stone Configs",
+  "guardianofstone.configuration.section.guardianofstone.common.toml": "Guardian Of Stone Configs",
+  "guardianofstone.configuration.section.guardianofstone.common.toml.title": "Guardian Of Stone Configs",
+  "guardianofstone.configuration.items": "Item List",
+  "guardianofstone.configuration.logDirtBlock": "Log Dirt Block",
+  "guardianofstone.configuration.magicNumberIntroduction": "Magic Number Text",
+  "guardianofstone.configuration.magicNumber": "Magic Number"
+}
