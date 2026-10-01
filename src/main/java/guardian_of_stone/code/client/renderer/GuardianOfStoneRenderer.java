@@ -27,5 +27,6 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
 
     public void extractRenderState(T entity, GuardianOfStoneRenderState state, float partialTicks) {
         super.extractRenderState(entity, state, partialTicks);
+        state.attackAnimationState.copyFrom(entity.attackAnimationState);
     }
 }

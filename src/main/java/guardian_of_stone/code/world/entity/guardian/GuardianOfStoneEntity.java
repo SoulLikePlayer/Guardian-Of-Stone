@@ -4,12 +4,11 @@ import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianMeleeAttackGoal;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.ResetUniversalAngerTargetGoal;
 import net.minecraft.world.entity.animal.golem.AbstractGolem;
-import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
@@ -19,6 +18,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
 public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
+    private int attackAnimationTick;
+    public final AnimationState attackAnimationState = new AnimationState();
+
     private static final EntityDataAccessor<@NotNull GuardianOfStoneState> STATE =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, ModEntityDataSerializers.STATE_SERIALIZER);
 
@@ -65,6 +67,41 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     }
 
     @Override
+    public void aiStep() {
+        super.aiStep();
+        if (this.attackAnimationTick > 0) {
+            this.attackAnimationTick--;
+        }
+        if (this.level().isClientSide()) {
+            this.setupAnimationStates();
+        }
+    }
+
+    @Override
+    public boolean doHurtTarget(ServerLevel level, @NotNull Entity target) {
+        level.broadcastEntityEvent(this, (byte) 4);
+        return super.doHurtTarget(level, target);
+    }
+
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id == 4) {
+            this.attackAnimationTick = 20;
+        } else {
+            super.handleEntityEvent(id);
+        }
+    }
+
+    public int getAttackAnimationTick() {
+        return this.attackAnimationTick;
+    }
+
+
+    private void setupAnimationStates() {
+        this.attackAnimationState.animateWhen(this.attackAnimationTick > 0, this.tickCount);
+    }
+
+    @Override
     public long getPersistentAngerEndTime() {
         return 0;
     }
@@ -89,3 +126,4 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
     }
 }
+
