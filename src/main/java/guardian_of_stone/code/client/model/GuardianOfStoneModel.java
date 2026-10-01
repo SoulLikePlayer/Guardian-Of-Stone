@@ -1,6 +1,5 @@
 package guardian_of_stone.code.client.model;
 
-import com.mojang.datafixers.DataFix;
 import guardian_of_stone.code.client.animation.definition.GuardianOfStoneAnimation;
 import guardian_of_stone.code.client.renderer.state.GuardianOfStoneRenderState;
 import net.minecraft.client.animation.KeyframeAnimation;
@@ -11,7 +10,7 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
-import net.minecraft.client.model.monster.creaking.CreakingModel;
+import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 
 public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRenderState> {
@@ -78,7 +77,11 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
     public void setupAnim(@NotNull GuardianOfStoneRenderState state) {
         super.setupAnim(state);
 
-        this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, 1.0F);
+        this.head.yRot = state.yRot * Mth.DEG_TO_RAD;
+        this.head.xRot = state.xRot * Mth.DEG_TO_RAD;
+
+        float walkScale = state.attackAnimationState.isStarted() ? 0.3F : 1.5F;
+        this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, walkScale);
         this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
     }
 }
