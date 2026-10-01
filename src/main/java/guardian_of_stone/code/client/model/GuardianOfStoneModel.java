@@ -1,6 +1,9 @@
 package guardian_of_stone.code.client.model;
 
+import com.mojang.datafixers.DataFix;
+import guardian_of_stone.code.client.animation.definition.GuardianOfStoneAnimation;
 import guardian_of_stone.code.client.renderer.state.GuardianOfStoneRenderState;
+import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -8,6 +11,7 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.model.monster.creaking.CreakingModel;
 import org.jetbrains.annotations.NotNull;
 
 public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRenderState> {
@@ -18,8 +22,15 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
     private final ModelPart leftLeg;
     private final ModelPart rightLeg;
 
+    private final KeyframeAnimation walkAnimation;
+    private final KeyframeAnimation attackAnimation;
+
     public GuardianOfStoneModel(ModelPart root) {
         super(root);
+
+        this.walkAnimation = GuardianOfStoneAnimation.GUARDIAN_WALKING.bake(root);
+        this.attackAnimation = GuardianOfStoneAnimation.GUARDIAN_ATTACK.bake(root);
+
         this.head = root.getChild("head");
         this.body = root.getChild("body");
         this.leftArm = root.getChild("left_arm");
@@ -61,5 +72,13 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
                 PartPose.offset(-1.0F, 6.5F, 0.5F));
 
         return LayerDefinition.create(meshDefinition, 64, 64);
+    }
+
+    @Override
+    public void setupAnim(@NotNull GuardianOfStoneRenderState state) {
+        super.setupAnim(state);
+
+        this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, 1.0F);
+        this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
     }
 }
