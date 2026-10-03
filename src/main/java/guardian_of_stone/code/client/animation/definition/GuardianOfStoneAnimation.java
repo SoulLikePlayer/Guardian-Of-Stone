@@ -83,7 +83,7 @@ public class GuardianOfStoneAnimation {
                 ))
                 .build();
 
-        GUARDIAN_ATTACK = AnimationDefinition.Builder.withLength(1.0F)
+        GUARDIAN_ATTACK = AnimationDefinition.Builder.withLength(1.5F)
                 .addAnimation("left_arm", new AnimationChannel(AnimationChannel.Targets.ROTATION,
                         new Keyframe(0.0F, KeyframeAnimations.degreeVec(0.0F, 0.0F, 0.0F), AnimationChannel.Interpolations.CATMULLROM),
                         new Keyframe(0.35F, KeyframeAnimations.degreeVec(-160.0F, 0.0F, 0.0F), AnimationChannel.Interpolations.CATMULLROM),

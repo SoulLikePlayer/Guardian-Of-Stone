@@ -8,4 +8,7 @@ public class GuardianOfStoneRenderState extends LivingEntityRenderState {
     public final AnimationState attackAnimationState = new AnimationState();
 
     public GuardianOfStoneState guardianOfStoneState;
+    public boolean pointing;
+    public float pointXRot;
+    public float pointZRot;
 }

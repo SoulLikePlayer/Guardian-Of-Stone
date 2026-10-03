@@ -83,5 +83,11 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
         float walkScale = state.attackAnimationState.isStarted() ? 0.3F : 1.5F;
         this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, walkScale);
         this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
+
+        if (state.pointing) {
+            this.rightArm.xRot = state.pointXRot;
+            this.rightArm.yRot = 0.0F;
+            this.rightArm.zRot = state.pointZRot;
+        }
     }
 }

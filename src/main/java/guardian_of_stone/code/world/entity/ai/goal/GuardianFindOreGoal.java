@@ -4,6 +4,9 @@ import guardian_of_stone.code.core.GuardianOfStone;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneEntity;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -23,6 +26,7 @@ public class GuardianFindOreGoal extends Goal {
     private @Nullable ArrayList<Block> pendingBlocks = null;
     private @Nullable ArrayList<Block> activeBlocks = null;
     private @Nullable BlockPos targetPos = null;
+    private @Nullable Block target = null;
 
     public GuardianFindOreGoal(GuardianOfStoneEntity guardian, int radius) {
         this.guardian = guardian;
@@ -48,7 +52,6 @@ public class GuardianFindOreGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        // Une nouvelle demande arrive -> on arrête pour relancer une recherche
         if (pendingBlocks != null) return false;
         return isTargetStillValid();
     }
@@ -60,42 +63,51 @@ public class GuardianFindOreGoal extends Goal {
     }
 
     @Override
+    public void stop() {
+        this.activeBlocks = null;
+        this.targetPos = null;
+        this.guardian.setPointingPos(null);
+        this.guardian.getNavigation().stop();
+        this.guardian.setState(GuardianOfStoneState.SLEEP);
+    }
+
+    @Override
     public boolean requiresUpdateEveryTick() {
-        return true; // pour que le regard soit fluide
+        return true;
     }
 
     @Override
     public void tick() {
         if (targetPos == null) return;
 
-        // Regarde le minerai
-        this.guardian.getLookControl().setLookAt(
-                targetPos.getX() + 0.5D,
-                targetPos.getY() + 0.5D,
-                targetPos.getZ() + 0.5D
-        );
+        double cx = targetPos.getX() + 0.5D;
+        double cy = targetPos.getY() + 0.5D;
+        double cz = targetPos.getZ() + 0.5D;
 
-        // Se déplace jusqu'à être proche, puis reste sur place
+        this.guardian.getLookControl().setLookAt(cx, cy, cz);
+
+        if (this.guardian.level() instanceof ServerLevel serverLevel
+                && this.guardian.tickCount % 4 == 0) {
+            serverLevel.sendParticles(
+                    new BlockParticleOption(ParticleTypes.BLOCK, target.defaultBlockState()),
+                    cx, cy, cz,
+                    8,
+                    0.35D, 0.35D, 0.35D,
+                    0.05D
+            );
+        }
+
         double distSqr = this.guardian.distanceToSqr(
                 targetPos.getX() + 0.5D, targetPos.getY() + 0.5D, targetPos.getZ() + 0.5D);
 
         if (distSqr <= STOP_DISTANCE_SQR) {
             this.guardian.getNavigation().stop();
+            this.guardian.setPointingPos(targetPos);
         } else if (this.guardian.getNavigation().isDone()
                 || this.guardian.tickCount % REPATH_INTERVAL == 0) {
             moveToTarget();
         }
     }
-
-    @Override
-    public void stop() {
-        this.activeBlocks = null;
-        this.targetPos = null;
-        this.guardian.getNavigation().stop();
-        this.guardian.setState(GuardianOfStoneState.SLEEP);
-    }
-
-    // ---------- utilitaires ----------
 
     private void moveToTarget() {
         if (targetPos == null) return;
@@ -103,7 +115,7 @@ public class GuardianFindOreGoal extends Goal {
                 targetPos.getX() + 0.5D, targetPos.getY(), targetPos.getZ() + 0.5D, SPEED);
     }
 
-    /** Vrai tant que le bloc ciblé est toujours un des minerais recherchés. */
+
     private boolean isTargetStillValid() {
         if (targetPos == null || activeBlocks == null) return false;
 
@@ -113,10 +125,9 @@ public class GuardianFindOreGoal extends Goal {
         for (Block block : activeBlocks) {
             if (level.getBlockState(targetPos).is(block)) return true;
         }
-        return false; // le joueur l'a miné
+        return false;
     }
 
-    /** withinManhattan parcourt les positions de la plus proche à la plus lointaine. */
     private @Nullable BlockPos findNearestOre(ArrayList<Block> blocks) {
         Level level = this.guardian.level();
         BlockPos origin = this.guardian.blockPosition();
@@ -126,6 +137,7 @@ public class GuardianFindOreGoal extends Goal {
 
             for (Block block : blocks) {
                 if (level.getBlockState(pos).is(block)) {
+                    this.target = block;
                     return pos.immutable();
                 }
             }

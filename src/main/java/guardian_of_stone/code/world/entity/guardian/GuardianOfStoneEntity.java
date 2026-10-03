@@ -3,9 +3,12 @@ package guardian_of_stone.code.world.entity.guardian;
 import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianFindOreGoal;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianMeleeAttackGoal;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.InteractionHand;
@@ -32,6 +35,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Optional;
 
 public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     private int attackAnimationTick;
@@ -41,6 +45,9 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     private static final UniformInt PERSISTENT_ANGER_TIME;
     private static final EntityDataAccessor<@NotNull GuardianOfStoneState> STATE =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, ModEntityDataSerializers.STATE_SERIALIZER);
+    private static final EntityDataAccessor<@NotNull Optional<BlockPos>> POINTING_POS =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
+
 
     private static final HashMap<Item, ArrayList<Block>> ORE_MAP = new HashMap<>();
     private GuardianFindOreGoal findOreGoal;
@@ -56,6 +63,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder entityData) {
         super.defineSynchedData(entityData);
         entityData.define(STATE, GuardianOfStoneState.SLEEP);
+        entityData.define(POINTING_POS, Optional.empty());
     }
 
     public GuardianOfStoneState getState() {
@@ -161,6 +169,19 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     @Override
     public void startPersistentAngerTimer() {
         this.setTimeToRemainAngry(PERSISTENT_ANGER_TIME.sample(this.random));
+    }
+
+    public void setPointingPos(@Nullable BlockPos pos) {
+        this.entityData.set(POINTING_POS, Optional.ofNullable(pos));
+    }
+
+    public @Nullable BlockPos getPointingPos() {
+        return this.entityData.get(POINTING_POS).orElse(null);
+    }
+
+    @Override
+    public boolean isPushable() {
+        return getState().equals(GuardianOfStoneState.AWAKE);
     }
 
     static {
