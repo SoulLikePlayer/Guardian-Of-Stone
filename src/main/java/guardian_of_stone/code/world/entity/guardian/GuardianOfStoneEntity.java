@@ -43,8 +43,12 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     private @Nullable EntityReference<@NotNull LivingEntity> persistentAngerTarget;
 
     private static final UniformInt PERSISTENT_ANGER_TIME;
+
     private static final EntityDataAccessor<@NotNull GuardianOfStoneState> STATE =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, ModEntityDataSerializers.STATE_SERIALIZER);
+    private static final EntityDataAccessor<@NotNull GuardianOfStoneType> TYPE =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, ModEntityDataSerializers.TYPE_SERIALIZER);
+
     private static final EntityDataAccessor<@NotNull Optional<BlockPos>> POINTING_POS =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
 
@@ -63,6 +67,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder entityData) {
         super.defineSynchedData(entityData);
         entityData.define(STATE, GuardianOfStoneState.SLEEP);
+        entityData.define(TYPE, GuardianOfStoneType.COAL);
         entityData.define(POINTING_POS, Optional.empty());
     }
 
@@ -74,11 +79,20 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         this.entityData.set(STATE, state);
     }
 
+    public GuardianOfStoneType getGuardianType(){
+        return this.entityData.get(TYPE);
+    }
+
+    public void setGuardianType(GuardianOfStoneType type){
+        this.entityData.set(TYPE, type);
+    }
+
     @Override
     protected void addAdditionalSaveData(@NotNull ValueOutput output) {
         super.addAdditionalSaveData(output);
 
         output.store("State", GuardianOfStoneState.CODEC, this.getState());
+        output.store("Type", GuardianOfStoneType.CODEC, this.getGuardianType());
     }
 
     @Override
@@ -86,6 +100,8 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         super.readAdditionalSaveData(input);
 
         this.setState(input.read("State", GuardianOfStoneState.CODEC).orElse(GuardianOfStoneState.SLEEP));
+        this.setGuardianType(input.read("Type", GuardianOfStoneType.CODEC).orElse(GuardianOfStoneType.COAL));
+
     }
 
     @Override

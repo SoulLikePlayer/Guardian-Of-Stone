@@ -2,6 +2,7 @@ package guardian_of_stone.code.world.entity;
 
 import guardian_of_stone.code.core.GuardianOfStone;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneState;
+import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneType;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -13,8 +14,11 @@ public class ModEntityDataSerializers {
 
     public static final EntityDataSerializer<@NotNull GuardianOfStoneState> STATE_SERIALIZER =
             EntityDataSerializer.forValueType(GuardianOfStoneState.STREAM_CODEC);
+    public static final EntityDataSerializer<@NotNull GuardianOfStoneType> TYPE_SERIALIZER =
+            EntityDataSerializer.forValueType(GuardianOfStoneType.STREAM_CODEC);
 
     static {
         SERIALIZERS.register("state", () -> STATE_SERIALIZER);
+        SERIALIZERS.register("type", () -> TYPE_SERIALIZER);
     }
 }
