@@ -8,6 +8,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
@@ -24,7 +25,12 @@ import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
@@ -137,7 +143,49 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
             findOreGoal.setSearchedBlock(ORE_MAP.get(item));
         }
 
+        ItemStack held = player.getItemInHand(hand);
+
+        switch (this.getGuardianType()){
+            case COAL -> {
+                if (!held.isEmpty() && this.level() instanceof ServerLevel serverLevel) {
+                    if (trySmelt(serverLevel, player, held)) {
+                        return InteractionResult.SUCCESS_SERVER;
+                    }
+                }
+
+            }
+            case COPPER -> {}
+            case IRON -> {}
+            case LAPIS -> {}
+            case REDSTONE -> {}
+            case EMERALD -> {}
+            case AMETHYST -> {}
+            case DIAMOND -> {}
+        }
+
         return InteractionResult.SUCCESS;
+    }
+
+    private boolean trySmelt(ServerLevel level, Player player, ItemStack held) {
+        SingleRecipeInput input = new SingleRecipeInput(held);
+
+        Optional<RecipeHolder<@NotNull SmeltingRecipe>> recipe =
+                level.recipeAccess().getRecipeFor(RecipeType.SMELTING, input, level);
+        if (recipe.isEmpty()) return false;
+
+        ItemStack result = recipe.get().value().assemble(input);
+        if (result.isEmpty()) return false;
+
+        if (!player.hasInfiniteMaterials()) {
+            held.shrink(1);
+        }
+
+        if (!player.getInventory().add(result)) {
+            player.addItem(result);
+        }
+
+        this.playSound(SoundEvents.FURNACE_FIRE_CRACKLE, 1.0F, 1.0F);
+        return true;
     }
 
     @Override
