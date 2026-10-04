@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.ByIdMap;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +19,8 @@ public enum GuardianOfStoneType implements StringRepresentable {
     LAPIS("lapis"),
     GOLD("gold"),
     DIAMOND("diamond"),
-    AMETHYST("amethyst");
+    AMETHYST("amethyst"),
+    EMERALD("emerald");
 
     public static final Codec<GuardianOfStoneType> CODEC = StringRepresentable.fromEnum(GuardianOfStoneType::values);
 
@@ -33,6 +35,9 @@ public enum GuardianOfStoneType implements StringRepresentable {
     GuardianOfStoneType(String stateName) {
         this.typeName = stateName;
     }
+
+    public static GuardianOfStoneType getRandomized(RandomSource randomSource){
+        return values()[randomSource.nextInt(values().length)];    }
 
     @Override
     public @NotNull String getSerializedName() {

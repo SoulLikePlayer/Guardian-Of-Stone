@@ -6,10 +6,7 @@ import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
-import net.minecraft.client.model.geom.builders.CubeListBuilder;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
-import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,35 +36,39 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
     }
 
     public static LayerDefinition createBodyLayer() {
+        return createBodyLayer(CubeDeformation.NONE);
+    }
+
+    public static LayerDefinition createBodyLayer(CubeDeformation d) {
         MeshDefinition meshDefinition = new MeshDefinition();
         PartDefinition partDefinition = meshDefinition.getRoot();
 
         partDefinition.addOrReplaceChild("head", CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-3.0F, -10.0F, -3.0F, 6.0F, 10.0F, 6.0F),
+                        .texOffs(0, 0).addBox(-3.0F, -10.0F, -3.0F, 6.0F, 10.0F, 6.0F, d),
                 PartPose.offset(-4.0F, -6.0F, 0.0F));
 
         partDefinition.addOrReplaceChild("body", CubeListBuilder.create()
-                        .texOffs(0, 16).addBox(0.0F, -3.0F, -3.0F, 6.0F, 13.0F, 5.0F)
-                        .texOffs(24, 0).addBox(-6.0F, -4.0F, -3.0F, 6.0F, 7.0F, 5.0F)
-                        .texOffs(24, 43).addBox(-5.0F, 3.0F, -2.0F, 5.0F, 3.0F, 3.0F),
+                        .texOffs(0, 16).addBox(0.0F, -3.0F, -3.0F, 6.0F, 13.0F, 5.0F, d)
+                        .texOffs(24, 0).addBox(-6.0F, -4.0F, -3.0F, 6.0F, 7.0F, 5.0F, d)
+                        .texOffs(24, 43).addBox(-5.0F, 3.0F, -2.0F, 5.0F, 3.0F, 3.0F, d),
                 PartPose.offset(-1.0F, -2.0F, 1.0F));
 
         partDefinition.addOrReplaceChild("left_arm", CubeListBuilder.create()
-                        .texOffs(34, 24).addBox(0.0F, -1.0F, -1.5F, 3.0F, 16.0F, 3.0F)
-                        .texOffs(40, 43).addBox(0.0F, 15.0F, -1.5F, 3.0F, 4.0F, 3.0F),
+                        .texOffs(34, 24).addBox(0.0F, -1.0F, -1.5F, 3.0F, 16.0F, 3.0F, d)
+                        .texOffs(40, 43).addBox(0.0F, 15.0F, -1.5F, 3.0F, 4.0F, 3.0F, d),
                 PartPose.offset(5.0F, -4.0F, 0.5F));
 
         partDefinition.addOrReplaceChild("right_arm", CubeListBuilder.create()
-                        .texOffs(22, 16).addBox(-2.0F, -1.5F, -1.5F, 3.0F, 21.0F, 3.0F)
-                        .texOffs(34, 12).addBox(-3.0F, 11.5F, -2.5F, 5.0F, 7.0F, 5.0F),
+                        .texOffs(22, 16).addBox(-2.0F, -1.5F, -1.5F, 3.0F, 21.0F, 3.0F, d)
+                        .texOffs(34, 12).addBox(-3.0F, 11.5F, -2.5F, 5.0F, 7.0F, 5.0F, d),
                 PartPose.offset(-8.0F, -4.5F, 1.5F));
 
         partDefinition.addOrReplaceChild("left_leg", CubeListBuilder.create()
-                        .texOffs(12, 40).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 16.0F, 3.0F),
+                        .texOffs(12, 40).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 16.0F, 3.0F, d),
                 PartPose.offset(1.5F, 8.0F, 0.5F));
 
         partDefinition.addOrReplaceChild("right_leg", CubeListBuilder.create()
-                        .texOffs(0, 34).addBox(-3.0F, -1.5F, -1.5F, 3.0F, 19.0F, 3.0F),
+                        .texOffs(0, 34).addBox(-3.0F, -1.5F, -1.5F, 3.0F, 19.0F, 3.0F, d),
                 PartPose.offset(-1.0F, 6.5F, 0.5F));
 
         return LayerDefinition.create(meshDefinition, 64, 64);

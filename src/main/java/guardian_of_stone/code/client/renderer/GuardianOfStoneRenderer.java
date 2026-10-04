@@ -2,15 +2,18 @@ package guardian_of_stone.code.client.renderer;
 
 import guardian_of_stone.code.client.GuardianOfStoneClient;
 import guardian_of_stone.code.client.model.GuardianOfStoneModel;
+import guardian_of_stone.code.client.renderer.layers.GuardianOfStoneOuterLayer;
 import guardian_of_stone.code.client.renderer.state.GuardianOfStoneRenderState;
 import guardian_of_stone.code.core.GuardianOfStone;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneEntity;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneState;
+import net.minecraft.client.renderer.entity.DrownedRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+
 import org.jetbrains.annotations.NotNull;
 
 public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends MobRenderer<@NotNull T, @NotNull GuardianOfStoneRenderState, @NotNull GuardianOfStoneModel> {
@@ -19,6 +22,7 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
 
     public GuardianOfStoneRenderer(EntityRendererProvider.Context context) {
         super(context, new GuardianOfStoneModel(context.bakeLayer(GuardianOfStoneClient.GUARDIAN_OF_STONE)), 1f);
+        this.addLayer(new GuardianOfStoneOuterLayer(this, context.getModelSet()));
     }
 
     public @NotNull Identifier getTextureLocation(GuardianOfStoneRenderState state) {
@@ -34,6 +38,7 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
 
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.guardianOfStoneState = entity.getState();
+        state.guardianOfStoneType = entity.getGuardianType();
 
         BlockPos p = entity.getPointingPos();
         state.pointing = p != null;
