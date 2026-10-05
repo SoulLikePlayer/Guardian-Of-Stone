@@ -2,6 +2,7 @@ package guardian_of_stone.code.world.entity.guardian;
 
 import com.mojang.serialization.Codec;
 import guardian_of_stone.code.world.entity.guardian.ability.GuardianAbility;
+import guardian_of_stone.code.world.entity.guardian.ability.PolishAbility;
 import guardian_of_stone.code.world.entity.guardian.ability.SmeltAbility;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -15,7 +16,7 @@ import java.util.function.IntFunction;
 
 public enum GuardianOfStoneType implements StringRepresentable {
     COAL("coal", new SmeltAbility()),
-    COPPER("copper", GuardianAbility.NONE),
+    COPPER("copper", new PolishAbility()),
     IRON("iron", GuardianAbility.NONE),
     REDSTONE("redstone", GuardianAbility.NONE),
     LAPIS("lapis", GuardianAbility.NONE),

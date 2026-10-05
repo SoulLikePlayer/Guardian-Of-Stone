@@ -37,8 +37,11 @@ public class GuardianOfStoneOuterLayer extends RenderLayer<@NotNull GuardianOfSt
 
     @Override
     public void submit(@NotNull PoseStack poseStack, @NotNull SubmitNodeCollector submitNodeCollector, int lightCoords, GuardianOfStoneRenderState state, float v, float v1) {
+        if(state.guardianOfStoneType.equals(GuardianOfStoneType.NONE)){
+            return;
+        }
+
         Identifier layerLocation = GUARDIAN_OUTER_LOCATION.get(state.guardianOfStoneType);
-        if (layerLocation == null) return;
         coloredCutoutModelCopyLayerRender(model, layerLocation, poseStack, submitNodeCollector, lightCoords, state, -1, 1);
     }
 }
