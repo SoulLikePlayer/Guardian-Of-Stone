@@ -1,6 +1,8 @@
 package guardian_of_stone.code.world.entity.guardian;
 
 import com.mojang.serialization.Codec;
+import guardian_of_stone.code.world.entity.guardian.ability.GuardianAbility;
+import guardian_of_stone.code.world.entity.guardian.ability.SmeltAbility;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -12,15 +14,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.IntFunction;
 
 public enum GuardianOfStoneType implements StringRepresentable {
-    COAL("coal"),
-    COPPER("copper"),
-    IRON("iron"),
-    REDSTONE("redstone"),
-    LAPIS("lapis"),
-    GOLD("gold"),
-    DIAMOND("diamond"),
-    AMETHYST("amethyst"),
-    EMERALD("emerald");
+    COAL("coal", new SmeltAbility()),
+    COPPER("copper", GuardianAbility.NONE),
+    IRON("iron", GuardianAbility.NONE),
+    REDSTONE("redstone", GuardianAbility.NONE),
+    LAPIS("lapis", GuardianAbility.NONE),
+    GOLD("gold", GuardianAbility.NONE),
+    DIAMOND("diamond", GuardianAbility.NONE),
+    AMETHYST("amethyst", GuardianAbility.NONE),
+    EMERALD("emerald", GuardianAbility.NONE),
+    NONE("none", GuardianAbility.NONE);
 
     public static final Codec<GuardianOfStoneType> CODEC = StringRepresentable.fromEnum(GuardianOfStoneType::values);
 
@@ -31,9 +34,11 @@ public enum GuardianOfStoneType implements StringRepresentable {
             ByteBufCodecs.idMapper(BY_ID, GuardianOfStoneType::ordinal);
 
     private final String typeName;
+    private final GuardianAbility ability;
 
-    GuardianOfStoneType(String stateName) {
-        this.typeName = stateName;
+    GuardianOfStoneType(String typeName, GuardianAbility guardianAbility) {
+        this.typeName = typeName;
+        this.ability = guardianAbility;
     }
 
     public static GuardianOfStoneType getRandomized(RandomSource randomSource){
@@ -42,6 +47,10 @@ public enum GuardianOfStoneType implements StringRepresentable {
     @Override
     public @NotNull String getSerializedName() {
         return this.typeName;
+    }
+
+    public GuardianAbility getAbility() {
+        return ability;
     }
 }
 

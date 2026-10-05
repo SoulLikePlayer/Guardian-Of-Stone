@@ -136,34 +136,18 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
     @Override
     protected @NotNull InteractionResult mobInteract(@NotNull Player player, @NotNull InteractionHand hand) {
-        Item item = player.getItemInHand(InteractionHand.MAIN_HAND).getItem();
-        if(!ORE_MAP.containsKey(item)) return InteractionResult.PASS;
-
-        if(!level().isClientSide()) {
-            findOreGoal.setSearchedBlock(ORE_MAP.get(item));
-        }
-
         ItemStack held = player.getItemInHand(hand);
 
-        switch (this.getGuardianType()){
-            case COAL -> {
-                if (!held.isEmpty() && this.level() instanceof ServerLevel serverLevel) {
-                    if (trySmelt(serverLevel, player, held)) {
-                        return InteractionResult.SUCCESS_SERVER;
-                    }
-                }
-
-            }
-            case COPPER -> {}
-            case IRON -> {}
-            case LAPIS -> {}
-            case REDSTONE -> {}
-            case EMERALD -> {}
-            case AMETHYST -> {}
-            case DIAMOND -> {}
+        if (this.level() instanceof ServerLevel serverLevel
+                && getGuardianType().getAbility().tryUse(this, serverLevel, player, held)) {
+            return InteractionResult.SUCCESS_SERVER;
         }
 
-        return InteractionResult.SUCCESS;
+        if (ORE_MAP.containsKey(held.getItem())) {
+            if (!level().isClientSide()) findOreGoal.setSearchedBlock(ORE_MAP.get(held.getItem()));
+            return InteractionResult.SUCCESS;
+        }
+        return InteractionResult.PASS;
     }
 
     private boolean trySmelt(ServerLevel level, Player player, ItemStack held) {
