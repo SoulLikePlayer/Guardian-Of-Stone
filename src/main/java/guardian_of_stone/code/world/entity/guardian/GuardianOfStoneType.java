@@ -1,6 +1,7 @@
 package guardian_of_stone.code.world.entity.guardian;
 
 import com.mojang.serialization.Codec;
+import guardian_of_stone.code.world.entity.guardian.ability.EnchanterAbility;
 import guardian_of_stone.code.world.entity.guardian.ability.GuardianAbility;
 import guardian_of_stone.code.world.entity.guardian.ability.PolishAbility;
 import guardian_of_stone.code.world.entity.guardian.ability.SmeltAbility;
@@ -19,7 +20,7 @@ public enum GuardianOfStoneType implements StringRepresentable {
     COPPER("copper", new PolishAbility()),
     IRON("iron", GuardianAbility.NONE),
     REDSTONE("redstone", GuardianAbility.NONE),
-    LAPIS("lapis", GuardianAbility.NONE),
+    LAPIS("lapis", new EnchanterAbility()),
     GOLD("gold", GuardianAbility.NONE),
     DIAMOND("diamond", GuardianAbility.NONE),
     AMETHYST("amethyst", GuardianAbility.NONE),
