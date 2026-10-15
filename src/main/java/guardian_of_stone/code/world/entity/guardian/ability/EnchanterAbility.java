@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EnchanterAbility implements GuardianAbility {
+public class EnchanterAbility implements IGuardianAbility {
     private static final String ENCHANTED_KEY = "guardian_enchanted";
 
     @Override

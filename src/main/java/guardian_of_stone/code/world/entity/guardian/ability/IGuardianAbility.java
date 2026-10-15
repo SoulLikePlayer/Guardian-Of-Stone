@@ -8,7 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-public interface GuardianAbility {
+public interface IGuardianAbility {
     boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held);
 
     default void tick(GuardianOfStoneEntity guardian, ServerLevel level) {}
@@ -19,5 +19,5 @@ public interface GuardianAbility {
 
     default void onStateChange(GuardianOfStoneEntity guardian, GuardianOfStoneState from, GuardianOfStoneState to) {}
 
-    GuardianAbility NONE = (g, l, p, h) -> false;
+    IGuardianAbility NONE = (g, l, p, h) -> false;
 }

@@ -9,15 +9,16 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-public class SmeltAbility implements GuardianAbility {
+public class SmeltAbility implements IGuardianAbility {
     @Override
     public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         SingleRecipeInput input = new SingleRecipeInput(held);
 
-        Optional<RecipeHolder<SmeltingRecipe>> recipe =
+        Optional<RecipeHolder<@NotNull SmeltingRecipe>> recipe =
                 level.recipeAccess().getRecipeFor(RecipeType.SMELTING, input, level);
         if (recipe.isEmpty()) return false;
 

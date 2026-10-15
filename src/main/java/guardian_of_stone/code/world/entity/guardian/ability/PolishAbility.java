@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.WeatheringCopper;
 
 import java.util.Optional;
 
-public class PolishAbility implements GuardianAbility {
+public class PolishAbility implements IGuardianAbility {
     @Override
     public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         if (!(held.getItem() instanceof BlockItem blockItem)) return false;

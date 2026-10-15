@@ -3,7 +3,7 @@ package guardian_of_stone.code.world.entity.guardian;
 import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianFindOreGoal;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianMeleeAttackGoal;
-import guardian_of_stone.code.world.entity.guardian.ability.GuardianAbility;
+import guardian_of_stone.code.world.entity.guardian.ability.IGuardianAbility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -176,7 +176,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         return true;
     }
 
-    private GuardianAbility ability() {
+    private IGuardianAbility ability() {
         return getGuardianType().getAbility();
     }
 

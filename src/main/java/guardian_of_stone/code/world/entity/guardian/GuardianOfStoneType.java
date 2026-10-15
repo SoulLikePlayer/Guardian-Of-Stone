@@ -1,10 +1,7 @@
 package guardian_of_stone.code.world.entity.guardian;
 
 import com.mojang.serialization.Codec;
-import guardian_of_stone.code.world.entity.guardian.ability.EnchanterAbility;
-import guardian_of_stone.code.world.entity.guardian.ability.GuardianAbility;
-import guardian_of_stone.code.world.entity.guardian.ability.PolishAbility;
-import guardian_of_stone.code.world.entity.guardian.ability.SmeltAbility;
+import guardian_of_stone.code.world.entity.guardian.ability.*;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -18,14 +15,14 @@ import java.util.function.IntFunction;
 public enum GuardianOfStoneType implements StringRepresentable {
     COAL("coal", new SmeltAbility()),
     COPPER("copper", new PolishAbility()),
-    IRON("iron", GuardianAbility.NONE),
-    REDSTONE("redstone", GuardianAbility.NONE),
+    IRON("iron", IGuardianAbility.NONE),
+    REDSTONE("redstone", IGuardianAbility.NONE),
     LAPIS("lapis", new EnchanterAbility()),
-    GOLD("gold", GuardianAbility.NONE),
-    DIAMOND("diamond", GuardianAbility.NONE),
-    AMETHYST("amethyst", GuardianAbility.NONE),
-    EMERALD("emerald", GuardianAbility.NONE),
-    NONE("none", GuardianAbility.NONE);
+    GOLD("gold", IGuardianAbility.NONE),
+    DIAMOND("diamond", IGuardianAbility.NONE),
+    AMETHYST("amethyst", new ResonanceAbility()),
+    EMERALD("emerald", IGuardianAbility.NONE),
+    NONE("none", IGuardianAbility.NONE);
 
     public static final Codec<GuardianOfStoneType> CODEC = StringRepresentable.fromEnum(GuardianOfStoneType::values);
 
@@ -36,9 +33,9 @@ public enum GuardianOfStoneType implements StringRepresentable {
             ByteBufCodecs.idMapper(BY_ID, GuardianOfStoneType::ordinal);
 
     private final String typeName;
-    private final GuardianAbility ability;
+    private final IGuardianAbility ability;
 
-    GuardianOfStoneType(String typeName, GuardianAbility guardianAbility) {
+    GuardianOfStoneType(String typeName, IGuardianAbility guardianAbility) {
         this.typeName = typeName;
         this.ability = guardianAbility;
     }
@@ -51,7 +48,7 @@ public enum GuardianOfStoneType implements StringRepresentable {
         return this.typeName;
     }
 
-    public GuardianAbility getAbility() {
+    public IGuardianAbility getAbility() {
         return ability;
     }
 }
