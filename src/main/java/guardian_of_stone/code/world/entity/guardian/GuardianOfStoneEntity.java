@@ -3,6 +3,7 @@ package guardian_of_stone.code.world.entity.guardian;
 import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianFindOreGoal;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianMeleeAttackGoal;
+import guardian_of_stone.code.world.entity.guardian.ability.GuardianAbility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -15,6 +16,7 @@ import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
@@ -90,8 +92,10 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         return this.entityData.get(STATE);
     }
 
-    public void setState(GuardianOfStoneState state){
+    public void setState(GuardianOfStoneState state) {
+        GuardianOfStoneState old = getState();
         this.entityData.set(STATE, state);
+        if (old != state) ability().onStateChange(this, old, state);
     }
 
     public GuardianOfStoneType getGuardianType(){
@@ -172,21 +176,35 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         return true;
     }
 
+    private GuardianAbility ability() {
+        return getGuardianType().getAbility();
+    }
+
     @Override
     public void aiStep() {
         super.aiStep();
-        if (this.attackAnimationTick > 0) {
-            this.attackAnimationTick--;
-        }
-        if (this.level().isClientSide()) {
+        if (this.attackAnimationTick > 0) this.attackAnimationTick--;
+
+        if (this.level() instanceof ServerLevel serverLevel) {
+            ability().tick(this, serverLevel);
+        } else {
             this.setupAnimationStates();
         }
     }
 
     @Override
-    public boolean doHurtTarget(ServerLevel level, @NotNull Entity target) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        boolean hurt = super.hurtServer(level, source, amount);
+        if (hurt) ability().onHurt(this, level, source, amount);
+        return hurt;
+    }
+
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity target) {
         level.broadcastEntityEvent(this, (byte) 4);
-        return super.doHurtTarget(level, target);
+        boolean hit = super.doHurtTarget(level, target);
+        if (hit) ability().onAttack(this, level, target);
+        return hit;
     }
 
     @Override
