@@ -30,8 +30,6 @@ public class EnchanterAbility implements IGuardianAbility {
             return true;
         }
 
-
-
         guardian.playSound(SoundEvents.ENCHANTMENT_TABLE_USE, 1.0F, 1.0F);
         return false;
     }

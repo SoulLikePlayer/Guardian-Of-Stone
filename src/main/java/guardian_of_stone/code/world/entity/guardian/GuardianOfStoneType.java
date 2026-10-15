@@ -15,13 +15,13 @@ import java.util.function.IntFunction;
 public enum GuardianOfStoneType implements StringRepresentable {
     COAL("coal", new SmeltAbility()),
     COPPER("copper", new PolishAbility()),
-    IRON("iron", IGuardianAbility.NONE),
-    REDSTONE("redstone", IGuardianAbility.NONE),
+    IRON("iron", new RepaireAbility()),
+    REDSTONE("redstone", new OverloadAbility()),
     LAPIS("lapis", new EnchanterAbility()),
-    GOLD("gold", IGuardianAbility.NONE),
+    GOLD("gold", new MidasTouchAbility()),
     DIAMOND("diamond", IGuardianAbility.NONE),
     AMETHYST("amethyst", new ResonanceAbility()),
-    EMERALD("emerald", IGuardianAbility.NONE),
+    EMERALD("emerald", new VillagerLootAbility()),
     NONE("none", IGuardianAbility.NONE);
 
     public static final Codec<GuardianOfStoneType> CODEC = StringRepresentable.fromEnum(GuardianOfStoneType::values);
