@@ -225,33 +225,33 @@ public class GuardianOfStoneAnimation {
         GUARDIAN_REPAIR = AnimationDefinition.Builder.withLength(2.5F)
                 .addAnimation("right_arm", rotation(
                         rot(0.0F, 0, 0, 0),
-                        rot(0.3F, -85, -30, 0),
-                        rot(0.6F, -50, -30, 0),
-                        rot(0.9F, -85, -30, 0),
-                        rot(1.2F, -50, -30, 0),
-                        rot(1.5F, -85, -30, 0),
-                        rot(1.8F, -50, -30, 0),
-                        rot(2.1F, -85, -30, 0),
+                        rot(0.3F, -55, -35, 0),
+                        rot(2.1F, -55, -35, 0),
                         rot(2.5F, 0, 0, 0)))
                 .addAnimation("left_arm", rotation(
                         rot(0.0F, 0, 0, 0),
-                        rot(0.3F, -70, 25, 0),
-                        rot(2.1F, -70, 25, 0),
+                        rot(0.3F, -45, 55, 0),
+                        rot(0.6F, -80, 40, 0),
+                        rot(0.9F, -45, 55, 0),
+                        rot(1.2F, -80, 40, 0),
+                        rot(1.5F, -45, 55, 0),
+                        rot(1.8F, -80, 40, 0),
+                        rot(2.1F, -45, 55, 0),
                         rot(2.5F, 0, 0, 0)))
                 .addAnimation("body", rotation(
                         rot(0.0F, 0, 0, 0),
-                        rot(0.3F, 6, 0, 0),
-                        rot(0.6F, 9, 0, 0),
-                        rot(0.9F, 6, 0, 0),
-                        rot(1.2F, 9, 0, 0),
-                        rot(1.5F, 6, 0, 0),
-                        rot(1.8F, 9, 0, 0),
-                        rot(2.1F, 6, 0, 0),
+                        rot(0.3F, 6, -8, 0),
+                        rot(0.6F, 8, -4, 0),
+                        rot(0.9F, 6, -8, 0),
+                        rot(1.2F, 8, -4, 0),
+                        rot(1.5F, 6, -8, 0),
+                        rot(1.8F, 8, -4, 0),
+                        rot(2.1F, 6, -8, 0),
                         rot(2.5F, 0, 0, 0)))
                 .addAnimation("head", rotation(
                         rot(0.0F, 0, 0, 0),
-                        rot(0.3F, 22, 0, 0),
-                        rot(2.1F, 22, 0, 0),
+                        rot(0.3F, 22, -10, 0),
+                        rot(2.1F, 22, -10, 0),
                         rot(2.5F, 0, 0, 0)))
                 .build();
 

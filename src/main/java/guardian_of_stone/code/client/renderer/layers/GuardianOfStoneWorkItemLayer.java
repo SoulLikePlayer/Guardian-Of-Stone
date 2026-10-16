@@ -31,6 +31,12 @@ public class GuardianOfStoneWorkItemLayer extends RenderLayer<@NotNull GuardianO
             poseStack.scale(-1.0F, -1.0F, 1.0F);
             poseStack.rotate(Axis.YP.rotationDegrees(state.ageInTicks * 4.0F));
             poseStack.scale(0.7F, 0.7F, 0.7F);
+        } else if (state.action == GuardianAction.REPAIR) {
+            getParentModel().translateToLeftHand(poseStack);
+            poseStack.rotate(Axis.XP.rotationDegrees(-90.0F));
+            poseStack.rotate(Axis.YP.rotationDegrees(180.0F));
+            poseStack.translate(-1.5F / 16.0F, 2.0F / 16.0F, -16.0F / 16.0F);
+            poseStack.scale(0.7F, 0.7F, 0.7F);
         } else {
             getParentModel().translateToRightHand(poseStack);
             poseStack.rotate(Axis.XP.rotationDegrees(-90.0F));

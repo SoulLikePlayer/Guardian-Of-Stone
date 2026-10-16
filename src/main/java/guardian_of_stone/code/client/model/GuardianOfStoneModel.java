@@ -113,4 +113,8 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
     public void translateToRightHand(PoseStack poseStack) {
         this.rightArm.translateAndRotate(poseStack);
     }
+
+    public void translateToLeftHand(PoseStack poseStack) {
+        this.leftArm.translateAndRotate(poseStack);
+    }
 }
