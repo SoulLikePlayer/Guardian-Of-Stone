@@ -26,11 +26,17 @@ public class GuardianOfStoneClient {
             "outer"
     );
 
+    public static final ModelLayerLocation GUARDIAN_OF_STONE_MOSS = new ModelLayerLocation(
+            Identifier.fromNamespaceAndPath(GuardianOfStone.MODID, "guardian_of_stone"),
+            "moss"
+    );
+
     @SubscribeEvent
     public static void registerLayerDefinition(EntityRenderersEvent.RegisterLayerDefinitions event){
         event.registerLayerDefinition(GUARDIAN_OF_STONE, GuardianOfStoneModel::createBodyLayer);
         event.registerLayerDefinition(GUARDIAN_OF_STONE_OUTER,
                 () -> GuardianOfStoneModel.createBodyLayer(new CubeDeformation(0.01F)));
+        event.registerLayerDefinition(GUARDIAN_OF_STONE_MOSS, () -> GuardianOfStoneModel.createBodyLayer(new CubeDeformation(0.2F)));
     }
 
     @SubscribeEvent

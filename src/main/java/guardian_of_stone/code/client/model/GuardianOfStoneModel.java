@@ -29,6 +29,7 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
     private final KeyframeAnimation panicAnimation;
 
     private static final float FEAR_INTENSITY = 0.3F;
+    private static final float MOSS_SHAKE_INTENSITY = 2.5F;
 
     private final Map<GuardianAction, KeyframeAnimation> actionAnimations = new EnumMap<>(GuardianAction.class);
 
@@ -119,17 +120,16 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
             this.rightArm.zRot = state.pointZRot;
         }
 
-        if (state.terrified) {
-            float t = state.ageInTicks;
-
-            applyFearShake(t);
+        if (state.shakingMoss) {
+            applyShake(state.ageInTicks, MOSS_SHAKE_INTENSITY);
+        } else if (state.terrified) {
+            applyShake(state.ageInTicks, FEAR_INTENSITY);
         }
     }
 
-    private void applyFearShake(float t) {
+    private void applyShake(float t, float k) {
         float a = Mth.sin(t * 3.7F) + 0.5F * Mth.sin(t * 6.1F + 1.3F);
         float b = Mth.sin(t * 4.3F + 2.1F) + 0.5F * Mth.sin(t * 7.3F);
-        float k = FEAR_INTENSITY;
 
         this.root.yRot += a * 0.03F * k;
         this.root.zRot += b * 0.02F * k;

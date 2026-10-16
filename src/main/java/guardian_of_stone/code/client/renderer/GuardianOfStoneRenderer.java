@@ -2,6 +2,7 @@ package guardian_of_stone.code.client.renderer;
 
 import guardian_of_stone.code.client.GuardianOfStoneClient;
 import guardian_of_stone.code.client.model.GuardianOfStoneModel;
+import guardian_of_stone.code.client.renderer.layers.GuardianOfStoneMossLayer;
 import guardian_of_stone.code.client.renderer.layers.GuardianOfStoneOuterLayer;
 import guardian_of_stone.code.client.renderer.layers.GuardianOfStoneWorkItemLayer;
 import guardian_of_stone.code.client.renderer.state.GuardianOfStoneRenderState;
@@ -31,6 +32,7 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
         this.itemResolver = context.getItemModelResolver();
         this.addLayer(new GuardianOfStoneOuterLayer(this, context.getModelSet()));
         this.addLayer(new GuardianOfStoneWorkItemLayer(this));
+        this.addLayer(new GuardianOfStoneMossLayer(this, context.getModelSet()));
     }
 
     public @NotNull Identifier getTextureLocation(GuardianOfStoneRenderState state) {
@@ -55,6 +57,8 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
         state.terrified = entity.isTerrified();
         state.guardianOfStoneState = entity.getState();
         state.guardianOfStoneType = entity.getGuardianType();
+        state.mossLevel = entity.getMossLevel();
+        state.shakingMoss = entity.isShakingMoss();
 
         this.itemResolver.updateForTopItem(state.workItem, entity.getWorkItem(),
                 ItemDisplayContext.GROUND, entity.level(), entity, entity.getId());

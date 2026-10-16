@@ -4,10 +4,13 @@ import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.*;
 import guardian_of_stone.code.world.entity.guardian.ability.IGuardianAbility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.DifficultyInstance;
@@ -30,6 +33,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.storage.ValueInput;
@@ -66,6 +70,10 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<@NotNull Boolean> TERRIFIED =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<@NotNull Integer> MOSS_LEVEL =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<@NotNull Boolean> SHAKING_MOSS =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
 
     static {
         ORE_MAP.put(Items.COAL, new ArrayList<>(Arrays.asList(Blocks.DEEPSLATE_COAL_ORE, Blocks.COAL_ORE)));
@@ -87,6 +95,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     private @Nullable EntityReference<@NotNull LivingEntity> persistentAngerTarget;
     private @Nullable UUID actionPlayer;
     private GuardianFindOreGoal findOreGoal;
+    private int mossTicks;
 
     public GuardianOfStoneEntity(EntityType<? extends @NotNull AbstractGolem> type, Level level) {
         super(type, level);
@@ -140,6 +149,8 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         entityData.define(ACTION, 0);
         entityData.define(WORK_ITEM, ItemStack.EMPTY);
         entityData.define(TERRIFIED, false);
+        entityData.define(MOSS_LEVEL, 0);
+        entityData.define(SHAKING_MOSS, false);
     }
 
     /**
@@ -154,6 +165,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         output.store("State", GuardianOfStoneState.CODEC, this.getState());
         output.store("Type", GuardianOfStoneType.CODEC, this.getGuardianType());
         output.store("WorkItem", ItemStack.OPTIONAL_CODEC, getWorkItem());
+        output.putInt("MossTicks", this.mossTicks);
     }
 
     /**
@@ -168,6 +180,8 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         this.setState(input.read("State", GuardianOfStoneState.CODEC).orElse(GuardianOfStoneState.SLEEP));
         this.setGuardianType(input.read("Type", GuardianOfStoneType.CODEC).orElse(GuardianOfStoneType.COAL));
         this.entityData.set(WORK_ITEM, input.read("WorkItem", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY));
+        this.mossTicks = input.getIntOr("MossTicks", 0);
+        this.setMossLevel(GuardianOfStoneMossLevel.fromTicks(this.mossTicks));
     }
 
     /**
@@ -182,6 +196,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
         this.goalSelector.addGoal(0, new GuardianFleeWardenGoal(this));
         this.goalSelector.addGoal(0, new GuardianAvoidSculkGoal(this));
+        this.goalSelector.addGoal(0, new GuardianShakeOffMossGoal(this));
         this.goalSelector.addGoal(1, new GuardianMeleeAttackGoal(this, 1.0f, true));
         this.goalSelector.addGoal(1, new GuardianUseAbilityGoal(this));
         this.goalSelector.addGoal(2, findOreGoal);
@@ -230,7 +245,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
      * has no action, or the item is not accepted
      */
     public boolean startAction(ServerLevel level, Player player, ItemStack held) {
-        if (isTerrified()) return false;
+        if (isTerrified() || isShakingMoss()) return false;
 
         IGuardianAbility ability = ability();
         GuardianAction action = ability.getAction();
@@ -302,8 +317,10 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         if (this.level() instanceof ServerLevel serverLevel) {
             ability().tick(this, serverLevel);
             tickAction(serverLevel);
+            tickMoss();
         } else {
             this.setupAnimationStates();
+            this.tickMossParticles();
         }
     }
 
@@ -511,4 +528,48 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     public boolean canAttack(@NotNull LivingEntity target) {
         return !(target instanceof Warden) && super.canAttack(target);
     }
+
+    private void tickMoss() {
+        if (this.tickCount % 20 != 0 || !isInLushCave()) return;
+        if (this.mossTicks >= GuardianOfStoneMossLevel.LARGE.getThresholdTicks()) return;
+
+        this.mossTicks += 20;
+        GuardianOfStoneMossLevel level = GuardianOfStoneMossLevel.fromTicks(this.mossTicks);
+        if (level != getMossLevel()) setMossLevel(level);
+    }
+
+    public boolean isInLushCave() {
+        return this.level().getBiome(this.blockPosition()).is(Biomes.LUSH_CAVES);
+    }
+
+    public void shakeOffMoss() {
+        this.mossTicks = 0;
+        setMossLevel(GuardianOfStoneMossLevel.NONE);
+        if (this.level() instanceof ServerLevel level) {
+            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.MOSS_BLOCK.defaultBlockState()),
+                    getX(), getY() + 1.5D, getZ(), 40, 0.5D, 0.9D, 0.5D, 0.1D);
+            this.playSound(SoundEvents.MOSS_BREAK, 1.0F, 0.8F);
+        }
+    }
+
+    private void tickMossParticles() {
+        if (!isShakingMoss() || this.tickCount % 2 != 0) return;
+        BlockParticleOption particle = new BlockParticleOption(ParticleTypes.BLOCK, Blocks.MOSS_BLOCK.defaultBlockState());
+        for (int i = 0; i < 2; i++) {
+            this.level().addParticle(particle,
+                    getRandomX(0.6D), getY() + this.random.nextDouble() * 2.5D, getRandomZ(0.6D),
+                    0.0D, -0.05D, 0.0D);
+        }
+    }
+
+    public GuardianOfStoneMossLevel getMossLevel() {
+        return GuardianOfStoneMossLevel.byId(this.entityData.get(MOSS_LEVEL));
+    }
+
+    public void setMossLevel(GuardianOfStoneMossLevel level) {
+        this.entityData.set(MOSS_LEVEL, level.ordinal());
+    }
+
+    public boolean isShakingMoss() { return this.entityData.get(SHAKING_MOSS); }
+    public void setShakingMoss(boolean shaking) { this.entityData.set(SHAKING_MOSS, shaking); }
 }
