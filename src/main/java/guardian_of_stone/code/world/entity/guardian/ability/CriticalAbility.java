@@ -16,7 +16,7 @@ public class CriticalAbility implements IGuardianAbility {
     private static final float CRIT_MULTIPLIER = 1.0F;
 
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
+    public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         return false;
     }
 

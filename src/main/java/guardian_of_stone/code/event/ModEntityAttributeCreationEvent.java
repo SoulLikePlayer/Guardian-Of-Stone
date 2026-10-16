@@ -1,6 +1,7 @@
 package guardian_of_stone.code.event;
 
 import guardian_of_stone.code.core.GuardianOfStone;
+import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneEntity;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -15,7 +16,7 @@ public class ModEntityAttributeCreationEvent {
     public static void createDefaultAttribute(EntityAttributeCreationEvent event){
         event.put(
                 GUARDIAN_OF_STONE.get(),
-                IronGolem.createAttributes()
+                GuardianOfStoneEntity.createAttributes()
                         .build()
         );
     }

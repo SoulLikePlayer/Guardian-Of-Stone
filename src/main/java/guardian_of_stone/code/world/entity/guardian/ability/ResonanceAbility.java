@@ -18,11 +18,6 @@ public class ResonanceAbility implements IGuardianAbility{
     private static final int GLOW_DURATION = 60;
 
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
-        return false;
-    }
-
-    @Override
     public void tick(GuardianOfStoneEntity guardian, ServerLevel level) {
         if(guardian.tickCount % CHECK_INTERVAL != 0) return;
 

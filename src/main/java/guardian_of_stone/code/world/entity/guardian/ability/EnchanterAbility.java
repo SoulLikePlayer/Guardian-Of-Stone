@@ -20,7 +20,7 @@ public class EnchanterAbility implements IGuardianAbility {
     private static final String ENCHANTED_KEY = "guardian_enchanted";
 
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
+    public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         if (held.isEmpty() || !held.isEnchanted() || hasBeenEnchanted(held)) {
             return false;
         }

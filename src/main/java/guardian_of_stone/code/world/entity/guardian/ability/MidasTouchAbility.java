@@ -20,7 +20,7 @@ public class MidasTouchAbility implements IGuardianAbility{
     }
 
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
+    public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         if(held.isEmpty() || !GOLDEN_ITEM_MAP.containsKey(held.getItem())) return false;
 
         Holder<@NotNull Item> result = GOLDEN_ITEM_MAP.get(held.getItem()).builtInRegistryHolder();

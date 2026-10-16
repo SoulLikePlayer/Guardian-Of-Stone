@@ -10,7 +10,7 @@ public class RepaireAbility implements IGuardianAbility {
     private static final float REPAIR_RATIO = 0.25f;
 
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
+    public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         if (held.isEmpty() || !held.isDamaged()) return false;
 
         int repair = Math.max(1, (int) (held.getMaxDamage() * REPAIR_RATIO));

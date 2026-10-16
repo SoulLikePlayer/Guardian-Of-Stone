@@ -44,17 +44,17 @@ public class VillagerLootAbility implements IGuardianAbility {
             () -> new ItemStack(Items.LAPIS_LAZULI, 2),
             () -> new ItemStack(Items.GLOWSTONE),
             () -> new ItemStack(Items.RABBIT_FOOT),
-            // Cuir
+
             () -> new ItemStack(Items.SADDLE),
             () -> new ItemStack(Items.LEATHER_HORSE_ARMOR),
-            // Lots "mauvais"
+
             () -> new ItemStack(Items.STICK, 2),
             () -> new ItemStack(Items.FLINT, 3),
             () -> new ItemStack(Items.GLASS_BOTTLE)
     );
 
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
+    public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         if (!held.is(Items.EMERALD)) return false;
 
         ItemStack reward = POOL.get(level.getRandom().nextInt(POOL.size())).get();

@@ -10,17 +10,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.RedstoneWireBlock;
 import net.minecraft.world.phys.AABB;
 
 public class OverloadAbility implements IGuardianAbility {
     private static final double RANGE = 16.0;
     private static final int CHECK_INTERVAL = 40;
     private static final int HAST_DURATION = 60;
-
-    @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
-        return false;
-    }
 
     @Override
     public void tick(GuardianOfStoneEntity guardian, ServerLevel level) {

@@ -18,6 +18,9 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.ResetUniversalAngerTargetGoal;
@@ -25,6 +28,7 @@ import net.minecraft.world.entity.animal.golem.AbstractGolem;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -88,6 +92,16 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         entityData.define(POINTING_POS, Optional.empty());
     }
 
+    public static AttributeSupplier.Builder createAttributes() {
+        return Mob.createMobAttributes()
+                .add(Attributes.MAX_HEALTH, 40.0D)
+                .add(Attributes.MOVEMENT_SPEED, 0.32D)
+                .add(Attributes.ATTACK_DAMAGE, 5.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.5D)
+                .add(Attributes.STEP_HEIGHT, 1.0D)
+                .add(Attributes.FOLLOW_RANGE, 48.0D);
+    }
+
     public GuardianOfStoneState getState() {
         return this.entityData.get(STATE);
     }
@@ -129,7 +143,13 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
         findOreGoal = new GuardianFindOreGoal(this, 50);
 
-        this.goalSelector.addGoal(1, new GuardianMeleeAttackGoal(this, 1.0F, true));
+        this.goalSelector.addGoal(0, new AvoidEntityGoal<>(this, Warden.class, 24.0F, 1.0D, 1.4D));
+
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false,
+                (target, _) -> target instanceof Enemy
+                        && !(target instanceof Creeper)
+                        && !(target instanceof Warden)));
+
         this.goalSelector.addGoal(2, findOreGoal);
 
         this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
@@ -143,7 +163,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         ItemStack held = player.getItemInHand(hand);
 
         if (this.level() instanceof ServerLevel serverLevel
-                && getGuardianType().getAbility().tryUse(this, serverLevel, player, held)) {
+                && getGuardianType().getAbility().canUse(this, serverLevel, player, held)) {
             return InteractionResult.SUCCESS_SERVER;
         }
 
@@ -257,6 +277,26 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     @Override
     public boolean isPushable() {
         return getState().equals(GuardianOfStoneState.AWAKE);
+    }
+
+    @Override
+    protected void dropCustomDeathLoot(@NotNull ServerLevel level, @NotNull DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
+
+        ItemStack drop = switch (getGuardianType()) {
+            case COAL -> new ItemStack(Items.COAL, 1 + random.nextInt(3));
+            case COPPER -> new ItemStack(Items.RAW_COPPER, 1 + random.nextInt(3));
+            case IRON -> new ItemStack(Items.RAW_IRON, 1 + random.nextInt(2));
+            case REDSTONE -> new ItemStack(Items.REDSTONE, 2 + random.nextInt(4));
+            case LAPIS -> new ItemStack(Items.LAPIS_LAZULI, 2 + random.nextInt(4));
+            case GOLD -> new ItemStack(Items.RAW_GOLD, 1 + random.nextInt(2));
+            case AMETHYST -> new ItemStack(Items.AMETHYST_SHARD, 1 + random.nextInt(3));
+            case DIAMOND -> random.nextFloat() < 0.35F ? new ItemStack(Items.DIAMOND) : ItemStack.EMPTY;
+            case EMERALD -> random.nextFloat() < 0.35F ? new ItemStack(Items.EMERALD) : ItemStack.EMPTY;
+            case NONE -> ItemStack.EMPTY;
+        };
+
+        if (!drop.isEmpty()) this.spawnAtLocation(level, drop);
     }
 
     static {

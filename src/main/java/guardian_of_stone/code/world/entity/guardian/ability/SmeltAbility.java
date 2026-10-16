@@ -15,7 +15,7 @@ import java.util.Optional;
 
 public class SmeltAbility implements IGuardianAbility {
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
+    public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         SingleRecipeInput input = new SingleRecipeInput(held);
 
         Optional<RecipeHolder<@NotNull SmeltingRecipe>> recipe =

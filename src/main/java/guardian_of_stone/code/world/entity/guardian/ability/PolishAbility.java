@@ -14,7 +14,7 @@ import java.util.Optional;
 
 public class PolishAbility implements IGuardianAbility {
     @Override
-    public boolean tryUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
+    public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
         if (!(held.getItem() instanceof BlockItem blockItem)) return false;
 
         Block block = blockItem.getBlock();
