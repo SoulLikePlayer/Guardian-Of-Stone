@@ -1,15 +1,13 @@
 package guardian_of_stone.code.world.entity.guardian;
 
 import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
-import guardian_of_stone.code.world.entity.ai.goal.GuardianFindOreGoal;
-import guardian_of_stone.code.world.entity.ai.goal.GuardianUseAbilityGoal;
+import guardian_of_stone.code.world.entity.ai.goal.*;
 import guardian_of_stone.code.world.entity.guardian.ability.IGuardianAbility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.DifficultyInstance;
@@ -19,7 +17,6 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.ResetUniversalAngerTargetGoal;
@@ -31,10 +28,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
-import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
@@ -71,6 +64,8 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<@NotNull ItemStack> WORK_ITEM =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.ITEM_STACK);
+    private static final EntityDataAccessor<@NotNull Boolean> TERRIFIED =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.BOOLEAN);
 
     static {
         ORE_MAP.put(Items.COAL, new ArrayList<>(Arrays.asList(Blocks.DEEPSLATE_COAL_ORE, Blocks.COAL_ORE)));
@@ -144,6 +139,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         entityData.define(POINTING_POS, Optional.empty());
         entityData.define(ACTION, 0);
         entityData.define(WORK_ITEM, ItemStack.EMPTY);
+        entityData.define(TERRIFIED, false);
     }
 
     /**
@@ -184,13 +180,14 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
         findOreGoal = new GuardianFindOreGoal(this, 50);
 
-        this.goalSelector.addGoal(0, new AvoidEntityGoal<>(this, Warden.class, 24.0F, 1.0D, 1.4D));
-        this.goalSelector.addGoal(0, new GuardianUseAbilityGoal(this));
+        this.goalSelector.addGoal(0, new GuardianFleeWardenGoal(this));
+        this.goalSelector.addGoal(0, new GuardianAvoidSculkGoal(this));
+        this.goalSelector.addGoal(1, new GuardianMeleeAttackGoal(this, 1.0f, true));
+        this.goalSelector.addGoal(1, new GuardianUseAbilityGoal(this));
         this.goalSelector.addGoal(2, findOreGoal);
 
         this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::isAngryAt));
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false, (target, _) -> target instanceof Enemy && !(target instanceof Creeper)));
         this.targetSelector.addGoal(2, new ResetUniversalAngerTargetGoal<>(this, false));
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false,
                 (target, _) -> target instanceof Enemy
@@ -233,6 +230,8 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
      * has no action, or the item is not accepted
      */
     public boolean startAction(ServerLevel level, Player player, ItemStack held) {
+        if (isTerrified()) return false;
+
         IGuardianAbility ability = ability();
         GuardianAction action = ability.getAction();
         if (action == GuardianAction.NONE || getAction() != GuardianAction.NONE) return false;
@@ -491,5 +490,25 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     @Override
     public void setPersistentAngerTarget(@Nullable EntityReference<@NotNull LivingEntity> persistentAngerTarget) {
         this.persistentAngerTarget = persistentAngerTarget;
+    }
+
+    public boolean isTerrified() { return this.entityData.get(TERRIFIED); }
+    public void setTerrified(boolean terrified) { this.entityData.set(TERRIFIED, terrified); }
+
+    public void cancelAction() {
+        if (getAction() == GuardianAction.NONE) return;
+        this.entityData.set(ACTION, GuardianAction.NONE.ordinal());
+        this.actionPlayer = null;
+        this.actionTicks = 0;
+    }
+
+    @Override
+    public boolean dampensVibrations() {
+        return isTerrified() || super.dampensVibrations();
+    }
+
+    @Override
+    public boolean canAttack(@NotNull LivingEntity target) {
+        return !(target instanceof Warden) && super.canAttack(target);
     }
 }

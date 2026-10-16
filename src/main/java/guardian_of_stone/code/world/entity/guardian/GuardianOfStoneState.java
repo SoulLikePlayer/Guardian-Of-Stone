@@ -12,7 +12,8 @@ import java.util.function.IntFunction;
 
 public enum GuardianOfStoneState implements StringRepresentable {
     SLEEP("sleep"),
-    AWAKE("awake");
+    AWAKE("awake"),
+    PANIC("panic");
 
     public static final Codec<GuardianOfStoneState> CODEC = StringRepresentable.fromEnum(GuardianOfStoneState::values);
 

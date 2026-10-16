@@ -34,7 +34,12 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
     }
 
     public @NotNull Identifier getTextureLocation(GuardianOfStoneRenderState state) {
-        return state.guardianOfStoneState.equals(GuardianOfStoneState.AWAKE) ? AWAKE_TEXTURE_LOCATION : SLEEP_TEXTURE_LOCATION;
+        return !state.guardianOfStoneState.equals(GuardianOfStoneState.SLEEP) ? AWAKE_TEXTURE_LOCATION : SLEEP_TEXTURE_LOCATION;
+    }
+
+    @Override
+    protected boolean isShaking(@NotNull GuardianOfStoneRenderState state) {
+        return super.isShaking(state) || state.terrified;
     }
 
     public GuardianOfStoneRenderState createRenderState() {
@@ -47,6 +52,7 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.actionAnimationState.copyFrom(entity.actionAnimationState);
         state.action = entity.getAction();
+        state.terrified = entity.isTerrified();
         state.guardianOfStoneState = entity.getState();
         state.guardianOfStoneType = entity.getGuardianType();
 
@@ -54,7 +60,7 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
                 ItemDisplayContext.GROUND, entity.level(), entity, entity.getId());
 
         BlockPos p = entity.getPointingPos();
-        state.pointing = p != null && state.action == GuardianAction.NONE;   // <- modifié
+        state.pointing = p != null && state.action == GuardianAction.NONE;
         if (!state.pointing) return;
 
         double dx = p.getX() + 0.5D - state.x;
@@ -67,7 +73,7 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
         double up   = dy;
 
         left += 0.5D;
-        up   -= 1.5D + 4.5D / 16.0D;
+        up -= 1.5D + 4.5D / 16.0D;
         fwd  += 1.5D / 16.0D;
 
         double len = Math.sqrt(fwd * fwd + left * left + up * up);

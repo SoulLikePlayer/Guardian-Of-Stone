@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import guardian_of_stone.code.client.animation.definition.GuardianOfStoneAnimation;
 import guardian_of_stone.code.client.renderer.state.GuardianOfStoneRenderState;
 import guardian_of_stone.code.world.entity.guardian.GuardianAction;
+import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneState;
 import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -25,6 +26,9 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
 
     private final KeyframeAnimation walkAnimation;
     private final KeyframeAnimation attackAnimation;
+    private final KeyframeAnimation panicAnimation;
+
+    private static final float FEAR_INTENSITY = 0.3F;
 
     private final Map<GuardianAction, KeyframeAnimation> actionAnimations = new EnumMap<>(GuardianAction.class);
 
@@ -33,6 +37,7 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
 
         this.walkAnimation = GuardianOfStoneAnimation.GUARDIAN_WALKING.bake(root);
         this.attackAnimation = GuardianOfStoneAnimation.GUARDIAN_ATTACK.bake(root);
+        this.panicAnimation = GuardianOfStoneAnimation.GUARDIAN_PANIC_RUN.bake(root);
 
         this.head = root.getChild("head");
         this.body = root.getChild("body");
@@ -95,8 +100,13 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
         this.head.yRot = state.yRot * Mth.DEG_TO_RAD;
         this.head.xRot = state.xRot * Mth.DEG_TO_RAD;
 
-        float walkScale = state.attackAnimationState.isStarted() ? 0.3F : 1.5F;
-        this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, walkScale);
+        if (state.guardianOfStoneState.equals(GuardianOfStoneState.PANIC)) {
+            this.panicAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, 3.0F);
+        } else {
+            float walkScale = state.attackAnimationState.isStarted() ? 0.3F : 1.5F;
+            this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, walkScale);
+        }
+
         this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
 
         KeyframeAnimation actionAnim = actionAnimations.get(state.action);
@@ -108,6 +118,37 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
             this.rightArm.yRot = 0.0F;
             this.rightArm.zRot = state.pointZRot;
         }
+
+        if (state.terrified) {
+            float t = state.ageInTicks;
+
+            applyFearShake(t);
+        }
+    }
+
+    private void applyFearShake(float t) {
+        float a = Mth.sin(t * 3.7F) + 0.5F * Mth.sin(t * 6.1F + 1.3F);
+        float b = Mth.sin(t * 4.3F + 2.1F) + 0.5F * Mth.sin(t * 7.3F);
+        float k = FEAR_INTENSITY;
+
+        this.root.yRot += a * 0.03F * k;
+        this.root.zRot += b * 0.02F * k;
+
+        shiver(this.head, t, 0.0F, 0.6F * k, 0.06F * k);
+        shiver(this.body, t, 1.1F, 0.5F * k, 0.04F * k);
+        shiver(this.leftArm, t, 2.2F, 0.8F * k, 0.10F * k);
+        shiver(this.rightArm, t, 3.3F, 0.8F * k, 0.10F * k);
+        shiver(this.leftLeg, t, 4.4F, 0.5F * k, 0.06F * k);
+        shiver(this.rightLeg, t, 5.5F, 0.5F * k, 0.06F * k);
+    }
+
+    private static void shiver(ModelPart part, float t, float phase, float posAmp, float rotAmp) {
+        float s1 = Mth.sin(t * 3.9F + phase);
+        float s2 = Mth.sin(t * 5.7F + phase * 1.7F);
+        part.x += s1 * posAmp;
+        part.z += s2 * posAmp * 0.6F;
+        part.xRot += s2 * rotAmp;
+        part.zRot += s1 * rotAmp;
     }
 
     public void translateToRightHand(PoseStack poseStack) {

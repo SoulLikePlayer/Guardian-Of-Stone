@@ -17,6 +17,7 @@ public class GuardianOfStoneRenderState extends LivingEntityRenderState {
     public GuardianAction action = GuardianAction.NONE;
 
     public boolean pointing;
+    public boolean terrified;
     public float pointXRot;
     public float pointZRot;
 }

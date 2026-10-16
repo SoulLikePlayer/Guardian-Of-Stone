@@ -14,6 +14,7 @@ public class GuardianOfStoneAnimation {
     public static final AnimationDefinition GUARDIAN_POLISH;
     public static final AnimationDefinition GUARDIAN_MIDAS;
     public static final AnimationDefinition GUARDIAN_TRADE;
+    public static final AnimationDefinition GUARDIAN_PANIC_RUN;
 
     private static Keyframe rot(float t, float x, float y, float z) {
         return new Keyframe(t, KeyframeAnimations.degreeVec(x, y, z), AnimationChannel.Interpolations.CATMULLROM);
@@ -21,6 +22,14 @@ public class GuardianOfStoneAnimation {
 
     private static AnimationChannel rotation(Keyframe... k) {
         return new AnimationChannel(AnimationChannel.Targets.ROTATION, k);
+    }
+
+    private static Keyframe pos(float t, float x, float y, float z) {
+        return new Keyframe(t, KeyframeAnimations.posVec(x, y, z), AnimationChannel.Interpolations.CATMULLROM);
+    }
+
+    private static AnimationChannel position(Keyframe... k) {
+        return new AnimationChannel(AnimationChannel.Targets.POSITION, k);
     }
 
     static {
@@ -349,6 +358,36 @@ public class GuardianOfStoneAnimation {
                         rot(1.55F, 0, 0, 0),
                         rot(1.8F, 18, 0, 0),
                         rot(2.0F, 0, 0, 0)))
+                .build();
+
+        GUARDIAN_PANIC_RUN = AnimationDefinition.Builder.withLength(0.5F).looping()
+                .addAnimation("left_leg", rotation(
+                        rot(0.0F, -60, 0, 0), rot(0.125F, -10, 0, 0), rot(0.25F, 30, 0, 0),
+                        rot(0.375F, -10, 0, 0), rot(0.5F, -60, 0, 0)))
+                .addAnimation("left_arm", rotation(
+                        rot(0.0F,   -145, 25,  20), rot(0.125F, -162, 0,  35), rot(0.25F, -175, -25,  50),
+                        rot(0.375F, -162, 0,  35), rot(0.5F,   -145, 25,  20)))
+                .addAnimation("right_arm", rotation(
+                        rot(0.0F,   -175, 25, -50), rot(0.125F, -162, 0, -35), rot(0.25F, -145, -25, -20),
+                        rot(0.375F, -162, 0, -35), rot(0.5F,   -175, 25, -50)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, -30, -20, 10), rot(0.125F, -35, 0, 0), rot(0.25F, -30, 20, -10),
+                        rot(0.375F, -35, 0, 0), rot(0.5F, -30, -20, 10)))
+                .addAnimation("body", rotation(
+                        rot(0.0F, -10, 8, 8), rot(0.125F, -12, 0, 0), rot(0.25F, -10, -8, -8),
+                        rot(0.375F, -12, 0, 0), rot(0.5F, -10, 8, 8)))
+                .addAnimation("body", position(
+                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
+                .addAnimation("head", position(
+                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
+                .addAnimation("left_arm", position(
+                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
+                .addAnimation("right_arm", position(
+                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
                 .build();
     }
 }

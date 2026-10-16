@@ -15,7 +15,7 @@ public class GuardianUseAbilityGoal extends Goal {
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
     }
 
-    @Override public boolean canUse() { return guardian.getAction() != GuardianAction.NONE; }
+    @Override public boolean canUse() { return guardian.getAction() != GuardianAction.NONE && guardian.getTarget() == null; }
     @Override public boolean canContinueToUse() { return canUse(); }
     @Override public boolean requiresUpdateEveryTick() { return true; }
 

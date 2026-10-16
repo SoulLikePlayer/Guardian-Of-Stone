@@ -1,6 +1,7 @@
 package guardian_of_stone.code.world.entity.ai.goal;
 
 import guardian_of_stone.code.core.GuardianOfStone;
+import guardian_of_stone.code.world.entity.guardian.GuardianFear;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneEntity;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneState;
 import net.minecraft.core.BlockPos;
@@ -19,6 +20,7 @@ public class GuardianFindOreGoal extends Goal {
     private static final double SPEED = 1.0D;
     private static final double STOP_DISTANCE_SQR = 3.0D * 3.0D;
     private static final int REPATH_INTERVAL = 10;
+    private static final int SCULK_SAFE_RADIUS = 6;
 
     private final GuardianOfStoneEntity guardian;
     private final int radius;
@@ -137,6 +139,7 @@ public class GuardianFindOreGoal extends Goal {
 
             for (Block block : blocks) {
                 if (level.getBlockState(pos).is(block)) {
+                    if (GuardianFear.isNearSculk(level, pos, SCULK_SAFE_RADIUS)) continue;
                     this.target = block;
                     return pos.immutable();
                 }
