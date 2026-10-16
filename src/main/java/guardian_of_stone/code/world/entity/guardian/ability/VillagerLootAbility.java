@@ -1,11 +1,14 @@
 package guardian_of_stone.code.world.entity.guardian.ability;
 
+import guardian_of_stone.code.world.entity.guardian.GuardianAction;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneEntity;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -53,16 +56,18 @@ public class VillagerLootAbility implements IGuardianAbility {
             () -> new ItemStack(Items.GLASS_BOTTLE)
     );
 
+    @Override public GuardianAction getAction() { return GuardianAction.TRADE; }
+
     @Override
     public boolean canUse(GuardianOfStoneEntity guardian, ServerLevel level, Player player, ItemStack held) {
-        if (!held.is(Items.EMERALD)) return false;
+        return held.is(Items.EMERALD);
+    }
 
-        ItemStack reward = POOL.get(level.getRandom().nextInt(POOL.size())).get();
-
-        if (!player.hasInfiniteMaterials()) held.shrink(1);
-        if (!player.getInventory().add(reward)) player.addItem(reward);
-
+    @Override
+    public ItemStack finish(GuardianOfStoneEntity guardian, ServerLevel level, ItemStack input) {
+        Vec3 p = guardian.getWorkPos();
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y, p.z, 8, 0.3, 0.3, 0.3, 0.0);
         guardian.playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.0F);
-        return true;
+        return POOL.get(level.getRandom().nextInt(POOL.size())).get();
     }
 }

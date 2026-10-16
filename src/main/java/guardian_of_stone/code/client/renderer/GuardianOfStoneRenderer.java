@@ -3,26 +3,34 @@ package guardian_of_stone.code.client.renderer;
 import guardian_of_stone.code.client.GuardianOfStoneClient;
 import guardian_of_stone.code.client.model.GuardianOfStoneModel;
 import guardian_of_stone.code.client.renderer.layers.GuardianOfStoneOuterLayer;
+import guardian_of_stone.code.client.renderer.layers.GuardianOfStoneWorkItemLayer;
 import guardian_of_stone.code.client.renderer.state.GuardianOfStoneRenderState;
 import guardian_of_stone.code.core.GuardianOfStone;
+import guardian_of_stone.code.world.entity.guardian.GuardianAction;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneEntity;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneState;
 import net.minecraft.client.renderer.entity.DrownedRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
+import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
+import net.minecraft.world.item.ItemDisplayContext;
 import org.jetbrains.annotations.NotNull;
 
 public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends MobRenderer<@NotNull T, @NotNull GuardianOfStoneRenderState, @NotNull GuardianOfStoneModel> {
     private static final Identifier SLEEP_TEXTURE_LOCATION = Identifier.fromNamespaceAndPath(GuardianOfStone.MODID, "textures/entity/guardian_of_stone/sleep_guardian_of_stone.png");
     private static final Identifier AWAKE_TEXTURE_LOCATION = Identifier.fromNamespaceAndPath(GuardianOfStone.MODID, "textures/entity/guardian_of_stone/awake_guardian_of_stone.png");
 
+    private final ItemModelResolver itemResolver;
+
     public GuardianOfStoneRenderer(EntityRendererProvider.Context context) {
         super(context, new GuardianOfStoneModel(context.bakeLayer(GuardianOfStoneClient.GUARDIAN_OF_STONE)), 1f);
+        this.itemResolver = context.getItemModelResolver();
         this.addLayer(new GuardianOfStoneOuterLayer(this, context.getModelSet()));
+        this.addLayer(new GuardianOfStoneWorkItemLayer(this));
     }
 
     public @NotNull Identifier getTextureLocation(GuardianOfStoneRenderState state) {
@@ -37,12 +45,17 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
         super.extractRenderState(entity, state, partialTicks);
 
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
+        state.actionAnimationState.copyFrom(entity.actionAnimationState);
+        state.action = entity.getAction();
         state.guardianOfStoneState = entity.getState();
         state.guardianOfStoneType = entity.getGuardianType();
 
+        this.itemResolver.updateForTopItem(state.workItem, entity.getWorkItem(),
+                ItemDisplayContext.GROUND, entity.level(), entity, entity.getId());
+
         BlockPos p = entity.getPointingPos();
-        state.pointing = p != null;
-        if (p == null) return;
+        state.pointing = p != null && state.action == GuardianAction.NONE;   // <- modifié
+        if (!state.pointing) return;
 
         double dx = p.getX() + 0.5D - state.x;
         double dy = p.getY() + 0.5D - state.y;

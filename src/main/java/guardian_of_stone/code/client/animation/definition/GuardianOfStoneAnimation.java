@@ -8,6 +8,20 @@ import net.minecraft.client.animation.KeyframeAnimations;
 public class GuardianOfStoneAnimation {
     public static final AnimationDefinition GUARDIAN_WALKING;
     public static final AnimationDefinition GUARDIAN_ATTACK;
+    public static final AnimationDefinition GUARDIAN_ENCHANT;
+    public static final AnimationDefinition GUARDIAN_SMELT;
+    public static final AnimationDefinition GUARDIAN_REPAIR;
+    public static final AnimationDefinition GUARDIAN_POLISH;
+    public static final AnimationDefinition GUARDIAN_MIDAS;
+    public static final AnimationDefinition GUARDIAN_TRADE;
+
+    private static Keyframe rot(float t, float x, float y, float z) {
+        return new Keyframe(t, KeyframeAnimations.degreeVec(x, y, z), AnimationChannel.Interpolations.CATMULLROM);
+    }
+
+    private static AnimationChannel rotation(Keyframe... k) {
+        return new AnimationChannel(AnimationChannel.Targets.ROTATION, k);
+    }
 
     static {
         GUARDIAN_WALKING = AnimationDefinition.Builder.withLength(1.0F).looping()
@@ -144,6 +158,197 @@ public class GuardianOfStoneAnimation {
                         new Keyframe(0.6F, KeyframeAnimations.posVec(0.0F, -1.0F, -1.5F), AnimationChannel.Interpolations.CATMULLROM),
                         new Keyframe(1.0F, KeyframeAnimations.posVec(0.0F, 0.0F, 0.0F), AnimationChannel.Interpolations.CATMULLROM)
                 ))
+                .build();
+
+        GUARDIAN_ENCHANT = AnimationDefinition.Builder.withLength(3.5F)
+                .addAnimation("right_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.7F, -80, 25, 0),
+                        rot(1.4F, -85, 20, 0),
+                        rot(2.1F, -80, 28, 0),
+                        rot(2.8F, -92, 22, 0),
+                        rot(3.1F, -115, 12, 0),
+                        rot(3.5F, 0, 0, 0)))
+                .addAnimation("left_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.7F, -80, -25, 0),
+                        rot(1.4F, -85, -20, 0),
+                        rot(2.1F, -80, -28, 0),
+                        rot(2.8F, -92, -22, 0),
+                        rot(3.1F, -115, -12, 0),
+                        rot(3.5F, 0, 0, 0)))
+                .addAnimation("body", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.7F, -6, 0, 0),
+                        rot(2.8F, -8, 0, 0),
+                        rot(3.1F, 5, 0, 0),
+                        rot(3.5F, 0, 0, 0)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.7F, -14, 0, 0),
+                        rot(2.8F, -14, 0, 0),
+                        rot(3.1F, -4, 0, 0),
+                        rot(3.5F, 0, 0, 0)))
+                .build();
+
+        GUARDIAN_SMELT = AnimationDefinition.Builder.withLength(3.0F)
+                .addAnimation("right_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.5F, -80, -12, 0),
+                        rot(1.0F, -82, -10, 2),
+                        rot(1.5F, -80, -12, -2),
+                        rot(2.0F, -83, -10, 3),
+                        rot(2.25F, -81, -13, -3),
+                        rot(2.5F, -83, -10, 3),
+                        rot(2.7F, -80, -12, 0),
+                        rot(3.0F, 0, 0, 0)))
+                .addAnimation("left_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.5F, -45, 30, 0),
+                        rot(2.7F, -45, 30, 0),
+                        rot(3.0F, 0, 0, 0)))
+                .addAnimation("body", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.5F, 8, -5, 0),
+                        rot(2.0F, 8, -5, 0),
+                        rot(2.25F, 9, -3, 1),
+                        rot(2.5F, 8, -6, -1),
+                        rot(2.7F, 8, -5, 0),
+                        rot(3.0F, 0, 0, 0)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.5F, 20, 0, 0),
+                        rot(2.7F, 20, 0, 0),
+                        rot(3.0F, 0, 0, 0)))
+                .build();
+
+        GUARDIAN_REPAIR = AnimationDefinition.Builder.withLength(2.5F)
+                .addAnimation("right_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, -85, -30, 0),
+                        rot(0.6F, -50, -30, 0),
+                        rot(0.9F, -85, -30, 0),
+                        rot(1.2F, -50, -30, 0),
+                        rot(1.5F, -85, -30, 0),
+                        rot(1.8F, -50, -30, 0),
+                        rot(2.1F, -85, -30, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .addAnimation("left_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, -70, 25, 0),
+                        rot(2.1F, -70, 25, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .addAnimation("body", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, 6, 0, 0),
+                        rot(0.6F, 9, 0, 0),
+                        rot(0.9F, 6, 0, 0),
+                        rot(1.2F, 9, 0, 0),
+                        rot(1.5F, 6, 0, 0),
+                        rot(1.8F, 9, 0, 0),
+                        rot(2.1F, 6, 0, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, 22, 0, 0),
+                        rot(2.1F, 22, 0, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .build();
+
+        GUARDIAN_POLISH = AnimationDefinition.Builder.withLength(2.0F)
+                .addAnimation("right_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, -55, 25, 0),
+                        rot(0.55F, -55, -30, 0),
+                        rot(1.05F, -55, 25, 0),
+                        rot(1.55F, -55, -30, 0),
+                        rot(1.8F, -55, 0, 0),
+                        rot(2.0F, 0, 0, 0)))
+                .addAnimation("left_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, -30, 25, 0),
+                        rot(1.8F, -30, 25, 0),
+                        rot(2.0F, 0, 0, 0)))
+                .addAnimation("body", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, 5, 5, 0),
+                        rot(0.55F, 5, -6, 0),
+                        rot(1.05F, 5, 5, 0),
+                        rot(1.55F, 5, -6, 0),
+                        rot(1.8F, 3, 0, 0),
+                        rot(2.0F, 0, 0, 0)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.3F, 15, 0, 0),
+                        rot(1.8F, 15, 0, 0),
+                        rot(2.0F, 0, 0, 0)))
+                .build();
+
+        GUARDIAN_MIDAS = AnimationDefinition.Builder.withLength(2.5F)
+                .addAnimation("right_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.5F, -95, -8, 0),
+                        rot(1.0F, -95, -8, 3),
+                        rot(1.3F, -95, -8, -3),
+                        rot(1.6F, -95, -8, 3),
+                        rot(1.9F, -100, -8, 0),
+                        rot(2.15F, -125, 0, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .addAnimation("left_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.6F, -75, 20, 0),
+                        rot(1.0F, -75, 20, 3),
+                        rot(1.3F, -75, 20, -3),
+                        rot(1.6F, -75, 20, 3),
+                        rot(1.9F, -75, 20, 0),
+                        rot(2.15F, -40, 30, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .addAnimation("body", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.5F, 6, 0, 0),
+                        rot(1.9F, 6, 0, 0),
+                        rot(2.15F, -10, 0, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.5F, 22, 0, 0),
+                        rot(1.9F, 22, 0, 0),
+                        rot(2.15F, -15, 0, 0),
+                        rot(2.5F, 0, 0, 0)))
+                .build();
+
+        GUARDIAN_TRADE = AnimationDefinition.Builder.withLength(2.0F)
+                .addAnimation("right_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.35F, -50, -35, 0),
+                        rot(1.0F, -50, -35, 0),
+                        rot(1.2F, -80, 0, 0),
+                        rot(1.75F, -80, 0, 0),
+                        rot(2.0F, 0, 0, 0)))
+                .addAnimation("left_arm", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.35F, -50, 35, 0),
+                        rot(1.0F, -50, 35, 0),
+                        rot(1.3F, -20, 15, 0),
+                        rot(1.75F, -20, 15, 0),
+                        rot(2.0F, 0, 0, 0)))
+                .addAnimation("body", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.35F, 4, 0, 0),
+                        rot(1.0F, 4, 0, 0),
+                        rot(1.3F, 8, 0, 0),
+                        rot(1.75F, 8, 0, 0),
+                        rot(2.0F, 0, 0, 0)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, 0, 0, 0),
+                        rot(0.4F, 15, 0, 0),
+                        rot(0.6F, 15, -12, 0),
+                        rot(0.9F, 15, 12, 0),
+                        rot(1.2F, 10, 0, 0),
+                        rot(1.3F, 18, 0, 0),
+                        rot(1.55F, 0, 0, 0),
+                        rot(1.8F, 18, 0, 0),
+                        rot(2.0F, 0, 0, 0)))
                 .build();
     }
 }

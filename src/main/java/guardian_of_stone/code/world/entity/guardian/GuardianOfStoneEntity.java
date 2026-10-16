@@ -3,6 +3,7 @@ package guardian_of_stone.code.world.entity.guardian;
 import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianFindOreGoal;
 import guardian_of_stone.code.world.entity.ai.goal.GuardianMeleeAttackGoal;
+import guardian_of_stone.code.world.entity.ai.goal.GuardianUseAbilityGoal;
 import guardian_of_stone.code.world.entity.guardian.ability.IGuardianAbility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -43,13 +44,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     private int attackAnimationTick;
@@ -66,12 +65,21 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     private static final EntityDataAccessor<@NotNull Optional<BlockPos>> POINTING_POS =
             SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
 
+    private static final EntityDataAccessor<@NotNull Integer> ACTION =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<@NotNull ItemStack> WORK_ITEM =
+            SynchedEntityData.defineId(GuardianOfStoneEntity.class, EntityDataSerializers.ITEM_STACK);
+
+    private int actionTicks;
+
+    private @Nullable UUID actionPlayer;
 
     private static final HashMap<Item, ArrayList<Block>> ORE_MAP = new HashMap<>();
     private GuardianFindOreGoal findOreGoal;
 
 
     public final AnimationState attackAnimationState = new AnimationState();
+    public final AnimationState actionAnimationState = new AnimationState();
 
     public GuardianOfStoneEntity(EntityType<? extends @NotNull AbstractGolem> type, Level level) {
         super(type, level);
@@ -90,6 +98,8 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         entityData.define(STATE, GuardianOfStoneState.SLEEP);
         entityData.define(TYPE, GuardianOfStoneType.COAL);
         entityData.define(POINTING_POS, Optional.empty());
+        entityData.define(ACTION, 0);
+        entityData.define(WORK_ITEM, ItemStack.EMPTY);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -126,6 +136,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
         output.store("State", GuardianOfStoneState.CODEC, this.getState());
         output.store("Type", GuardianOfStoneType.CODEC, this.getGuardianType());
+        output.store("WorkItem", ItemStack.OPTIONAL_CODEC, getWorkItem());
     }
 
     @Override
@@ -134,7 +145,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
         this.setState(input.read("State", GuardianOfStoneState.CODEC).orElse(GuardianOfStoneState.SLEEP));
         this.setGuardianType(input.read("Type", GuardianOfStoneType.CODEC).orElse(GuardianOfStoneType.COAL));
-
+        this.entityData.set(WORK_ITEM, input.read("WorkItem", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY));
     }
 
     @Override
@@ -144,11 +155,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         findOreGoal = new GuardianFindOreGoal(this, 50);
 
         this.goalSelector.addGoal(0, new AvoidEntityGoal<>(this, Warden.class, 24.0F, 1.0D, 1.4D));
-
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false,
-                (target, _) -> target instanceof Enemy
-                        && !(target instanceof Creeper)
-                        && !(target instanceof Warden)));
+        this.goalSelector.addGoal(0, new GuardianUseAbilityGoal(this));
 
         this.goalSelector.addGoal(2, findOreGoal);
 
@@ -156,15 +163,19 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::isAngryAt));
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false, (target, _) -> target instanceof Enemy && !(target instanceof Creeper)));
         this.targetSelector.addGoal(2, new ResetUniversalAngerTargetGoal<>(this, false));
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false,
+                (target, _) -> target instanceof Enemy
+                        && !(target instanceof Creeper)
+                        && !(target instanceof Warden)));
     }
 
     @Override
     protected @NotNull InteractionResult mobInteract(@NotNull Player player, @NotNull InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
 
-        if (this.level() instanceof ServerLevel serverLevel
-                && getGuardianType().getAbility().canUse(this, serverLevel, player, held)) {
-            return InteractionResult.SUCCESS_SERVER;
+        if (this.level() instanceof ServerLevel serverLevel) {
+            if (getAction() != GuardianAction.NONE) return InteractionResult.SUCCESS_SERVER; // occupé
+            if (startAction(serverLevel, player, held)) return InteractionResult.SUCCESS_SERVER;
         }
 
         if (ORE_MAP.containsKey(held.getItem())) {
@@ -172,6 +183,65 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
+    }
+
+    public GuardianAction getAction() { return GuardianAction.BY_ID.apply(this.entityData.get(ACTION)); }
+    public ItemStack getWorkItem() { return this.entityData.get(WORK_ITEM); }
+    public @Nullable Player getActionPlayer() {
+        return actionPlayer == null ? null : level().getPlayerByUUID(actionPlayer);
+    }
+
+    public Vec3 getWorkPos() {
+        return this.position()
+                .add(Vec3.directionFromRotation(0.0F, this.yBodyRot).scale(0.9D))
+                .add(0.0D, 1.4D, 0.0D);
+    }
+
+    public boolean startAction(ServerLevel level, Player player, ItemStack held) {
+        IGuardianAbility ability = ability();
+        GuardianAction action = ability.getAction();
+        if (action == GuardianAction.NONE || getAction() != GuardianAction.NONE) return false;
+        if (held.isEmpty() || !ability.canUse(this, level, player, held)) return false;
+
+        int count = Math.min(ability.getInputCount(held), held.getCount());
+        ItemStack taken = player.hasInfiniteMaterials() ? held.copyWithCount(count) : held.split(count);
+
+        this.actionPlayer = player.getUUID();
+        this.actionTicks = 0;
+        this.setPointingPos(null);
+        this.entityData.set(WORK_ITEM, taken);
+        this.entityData.set(ACTION, action.ordinal());
+        return true;
+    }
+
+    private void tickAction(ServerLevel level) {
+        GuardianAction action = getAction();
+
+        if (action == GuardianAction.NONE) {
+            if (!getWorkItem().isEmpty()) {
+                this.spawnAtLocation(level, getWorkItem().copy());
+                this.entityData.set(WORK_ITEM, ItemStack.EMPTY);
+            }
+            return;
+        }
+
+        actionTicks++;
+        ability().onActionTick(this, level, actionTicks);
+        if (actionTicks >= action.getDurationTicks()) finishAction(level);
+    }
+
+    private void finishAction(ServerLevel level) {
+        ItemStack result = ability().finish(this, level, getWorkItem().copy());
+        Player player = getActionPlayer();
+
+        this.entityData.set(WORK_ITEM, ItemStack.EMPTY);
+        this.entityData.set(ACTION, GuardianAction.NONE.ordinal());
+        this.actionPlayer = null;
+        this.actionTicks = 0;
+
+        if (result.isEmpty()) return;
+        if (player != null && player.isAlive()) player.addItem(result);   // inventaire, sinon drop
+        else this.spawnAtLocation(level, result);
     }
 
     private boolean trySmelt(ServerLevel level, Player player, ItemStack held) {
@@ -207,6 +277,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
         if (this.level() instanceof ServerLevel serverLevel) {
             ability().tick(this, serverLevel);
+            tickAction(serverLevel);
         } else {
             this.setupAnimationStates();
         }
@@ -238,6 +309,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
     private void setupAnimationStates() {
         this.attackAnimationState.animateWhen(this.attackAnimationTick > 0, this.tickCount);
+        this.actionAnimationState.animateWhen(getAction() != GuardianAction.NONE, this.tickCount);
     }
 
     @Override
@@ -297,6 +369,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         };
 
         if (!drop.isEmpty()) this.spawnAtLocation(level, drop);
+        if (!getWorkItem().isEmpty()) this.spawnAtLocation(level, getWorkItem().copy());
     }
 
     static {

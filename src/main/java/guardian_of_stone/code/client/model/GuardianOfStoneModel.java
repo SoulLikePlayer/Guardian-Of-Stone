@@ -1,7 +1,9 @@
 package guardian_of_stone.code.client.model;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import guardian_of_stone.code.client.animation.definition.GuardianOfStoneAnimation;
 import guardian_of_stone.code.client.renderer.state.GuardianOfStoneRenderState;
+import guardian_of_stone.code.world.entity.guardian.GuardianAction;
 import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -9,6 +11,9 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRenderState> {
     private final ModelPart head;
@@ -20,6 +25,8 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
 
     private final KeyframeAnimation walkAnimation;
     private final KeyframeAnimation attackAnimation;
+
+    private final Map<GuardianAction, KeyframeAnimation> actionAnimations = new EnumMap<>(GuardianAction.class);
 
     public GuardianOfStoneModel(ModelPart root) {
         super(root);
@@ -33,6 +40,13 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
         this.rightArm = root.getChild("right_arm");
         this.leftLeg = root.getChild("left_leg");
         this.rightLeg = root.getChild("right_leg");
+
+        actionAnimations.put(GuardianAction.ENCHANT, GuardianOfStoneAnimation.GUARDIAN_ENCHANT.bake(root));
+        actionAnimations.put(GuardianAction.SMELT,   GuardianOfStoneAnimation.GUARDIAN_SMELT.bake(root));
+        actionAnimations.put(GuardianAction.REPAIR,  GuardianOfStoneAnimation.GUARDIAN_REPAIR.bake(root));
+        actionAnimations.put(GuardianAction.POLISH,  GuardianOfStoneAnimation.GUARDIAN_POLISH.bake(root));
+        actionAnimations.put(GuardianAction.MIDAS,   GuardianOfStoneAnimation.GUARDIAN_MIDAS.bake(root));
+        actionAnimations.put(GuardianAction.TRADE,   GuardianOfStoneAnimation.GUARDIAN_TRADE.bake(root));
     }
 
     public static LayerDefinition createBodyLayer() {
@@ -85,10 +99,18 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
         this.walkAnimation.applyWalk(state.walkAnimationPos, state.walkAnimationSpeed, 1.0F, walkScale);
         this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
 
+        KeyframeAnimation actionAnim = actionAnimations.get(state.action);
+        if (actionAnim != null) actionAnim.apply(state.actionAnimationState, state.ageInTicks);
+
+
         if (state.pointing) {
             this.rightArm.xRot = state.pointXRot;
             this.rightArm.yRot = 0.0F;
             this.rightArm.zRot = state.pointZRot;
         }
+    }
+
+    public void translateToRightHand(PoseStack poseStack) {
+        this.rightArm.translateAndRotate(poseStack);
     }
 }
