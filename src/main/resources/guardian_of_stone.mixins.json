@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "guardian_of_stone.code.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "RedstoneWireEvaluatorMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

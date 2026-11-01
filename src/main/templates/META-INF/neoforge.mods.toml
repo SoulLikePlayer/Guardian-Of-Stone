@@ -85,3 +85,5 @@ Guardian of Stone adds a single new creature to Minecraft's caves: the Guardian 
 # stop your mod loading on the server for example.
 #[features.${mod_id}]
 #openGLVersion="[3.2,)"
+[[mixins]]
+config = "guardian_of_stone.mixins.json"

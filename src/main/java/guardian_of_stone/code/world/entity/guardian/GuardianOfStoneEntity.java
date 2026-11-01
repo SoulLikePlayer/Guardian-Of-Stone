@@ -3,6 +3,7 @@ package guardian_of_stone.code.world.entity.guardian;
 import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.*;
 import guardian_of_stone.code.world.entity.guardian.ability.IGuardianAbility;
+import guardian_of_stone.code.world.entity.guardian.ability.OverloadAbility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -574,4 +575,12 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
     public boolean isShakingMoss() { return this.entityData.get(SHAKING_MOSS); }
     public void setShakingMoss(boolean shaking) { this.entityData.set(SHAKING_MOSS, shaking); }
+
+    @Override
+    public void remove(@NotNull RemovalReason reason) {
+        if (this.level() instanceof ServerLevel) {
+            OverloadAbility.onGuardianRemoved(this);
+        }
+        super.remove(reason);
+    }
 }
