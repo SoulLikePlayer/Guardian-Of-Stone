@@ -13,16 +13,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.IntFunction;
 
 public enum GuardianOfStoneType implements StringRepresentable {
-    COAL("coal", new SmeltAbility()),
-    COPPER("copper", new PolishAbility()),
-    IRON("iron", new RepaireAbility()),
-    REDSTONE("redstone", new OverloadAbility()),
-    LAPIS("lapis", new EnchanterAbility()),
-    GOLD("gold", new MidasTouchAbility()),
-    DIAMOND("diamond", IGuardianAbility.NONE),
-    AMETHYST("amethyst", new ResonanceAbility()),
-    EMERALD("emerald", new VillagerLootAbility()),
-    NONE("none", IGuardianAbility.NONE);
+    COAL("coal", new SmeltAbility(), 50),
+    COPPER("copper", new PolishAbility(), 45),
+    IRON("iron", new RepaireAbility(), 40),
+    REDSTONE("redstone", new OverloadAbility(), 25),
+    LAPIS("lapis", new EnchanterAbility(), 15),
+    GOLD("gold", new MidasTouchAbility(), 15),
+    AMETHYST("amethyst", new ResonanceAbility(), 12),
+    DIAMOND("diamond", new CriticalAbility(), 8),
+    EMERALD("emerald", new VillagerLootAbility(), 4),
+    NONE("none", IGuardianAbility.NONE, 60);
 
     public static final Codec<GuardianOfStoneType> CODEC = StringRepresentable.fromEnum(GuardianOfStoneType::values);
 
@@ -34,14 +34,37 @@ public enum GuardianOfStoneType implements StringRepresentable {
 
     private final String typeName;
     private final IGuardianAbility ability;
+    private final int weight;
 
-    GuardianOfStoneType(String typeName, IGuardianAbility guardianAbility) {
+    private static final int TOTAL_WEIGHT;
+
+    static {
+        int total = 0;
+        for(GuardianOfStoneType g : values()){
+            total += g.weight;
+        }
+
+        TOTAL_WEIGHT = total;
+    }
+
+    GuardianOfStoneType(String typeName, IGuardianAbility guardianAbility, int weight) {
         this.typeName = typeName;
         this.ability = guardianAbility;
+        this.weight = weight;
     }
 
     public static GuardianOfStoneType getRandomized(RandomSource randomSource){
-        return values()[randomSource.nextInt(values().length)];    }
+        int draw = randomSource.nextInt(TOTAL_WEIGHT);
+        int accumulation = 0;
+        for (GuardianOfStoneType g : values()){
+            accumulation += g.weight;
+            if (draw < accumulation){
+                return g;
+            }
+        }
+
+        return GuardianOfStoneType.NONE;
+    }
 
     @Override
     public @NotNull String getSerializedName() {
