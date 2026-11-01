@@ -15,6 +15,36 @@ public class GuardianOfStoneAnimation {
     public static final AnimationDefinition GUARDIAN_MIDAS;
     public static final AnimationDefinition GUARDIAN_TRADE;
     public static final AnimationDefinition GUARDIAN_PANIC_RUN;
+    public static final AnimationDefinition GUARDIAN_SHAKE_MOSS;
+
+    private static final float SHAKE_LENGTH = 2.0F;
+    private static final float SHAKE_START = 0.25F;
+    private static final float SHAKE_STEP = 0.125F;
+    private static final float[] SHAKE_ENVELOPE =
+            {0.5F, 0.85F, 1F, 1F, 1F, 1F, 1F, 1F, 1F, 1F, 0.85F, 0.6F, 0.3F};
+
+    private static AnimationChannel shakeRotation(float bx, float by, float bz,
+                                                  float ax, float ay, float az, int phase) {
+        Keyframe[] frames = new Keyframe[SHAKE_ENVELOPE.length + 2];
+        frames[0] = rot(0.0F, 0, 0, 0);
+        for (int i = 0; i < SHAKE_ENVELOPE.length; i++) {
+            float s = ((i + phase) % 2 == 0 ? 1.0F : -1.0F) * SHAKE_ENVELOPE[i];
+            frames[i + 1] = rot(SHAKE_START + SHAKE_STEP * i, bx + ax * s, by + ay * s, bz + az * s);
+        }
+        frames[frames.length - 1] = rot(SHAKE_LENGTH, 0, 0, 0);
+        return rotation(frames);
+    }
+
+    private static AnimationChannel shakePosition(float dip) {
+        Keyframe[] frames = new Keyframe[SHAKE_ENVELOPE.length + 2];
+        frames[0] = pos(0.0F, 0, 0, 0);
+        for (int i = 0; i < SHAKE_ENVELOPE.length; i++) {
+            float y = (i % 2 == 0 ? 0.0F : -dip) * SHAKE_ENVELOPE[i];
+            frames[i + 1] = pos(SHAKE_START + SHAKE_STEP * i, 0, y, 0);
+        }
+        frames[frames.length - 1] = pos(SHAKE_LENGTH, 0, 0, 0);
+        return position(frames);
+    }
 
     private static Keyframe rot(float t, float x, float y, float z) {
         return new Keyframe(t, KeyframeAnimations.degreeVec(x, y, z), AnimationChannel.Interpolations.CATMULLROM);
@@ -362,32 +392,41 @@ public class GuardianOfStoneAnimation {
 
         GUARDIAN_PANIC_RUN = AnimationDefinition.Builder.withLength(0.5F).looping()
                 .addAnimation("left_leg", rotation(
-                        rot(0.0F, -60, 0, 0), rot(0.125F, -10, 0, 0), rot(0.25F, 30, 0, 0),
-                        rot(0.375F, -10, 0, 0), rot(0.5F, -60, 0, 0)))
+                        rot(0.0F, -35, 0, 0), rot(0.125F, 0, 0, 0), rot(0.25F, 35, 0, 0),
+                        rot(0.375F, 0, 0, 0), rot(0.5F, -35, 0, 0)))
+                .addAnimation("right_leg", rotation(
+                        rot(0.0F, 35, 0, 0), rot(0.125F, 0, 0, 0), rot(0.25F, -35, 0, 0),
+                        rot(0.375F, 0, 0, 0), rot(0.5F, 35, 0, 0)))
                 .addAnimation("left_arm", rotation(
-                        rot(0.0F,   -145, 25,  20), rot(0.125F, -162, 0,  35), rot(0.25F, -175, -25,  50),
-                        rot(0.375F, -162, 0,  35), rot(0.5F,   -145, 25,  20)))
+                        rot(0.0F, 30, 0, 0), rot(0.125F, 0, 0, 0), rot(0.25F, -30, 0, 0),
+                        rot(0.375F, 0, 0, 0), rot(0.5F, 30, 0, 0)))
                 .addAnimation("right_arm", rotation(
-                        rot(0.0F,   -175, 25, -50), rot(0.125F, -162, 0, -35), rot(0.25F, -145, -25, -20),
-                        rot(0.375F, -162, 0, -35), rot(0.5F,   -175, 25, -50)))
-                .addAnimation("head", rotation(
-                        rot(0.0F, -30, -20, 10), rot(0.125F, -35, 0, 0), rot(0.25F, -30, 20, -10),
-                        rot(0.375F, -35, 0, 0), rot(0.5F, -30, -20, 10)))
+                        rot(0.0F, -30, 0, 0), rot(0.125F, 0, 0, 0), rot(0.25F, 30, 0, 0),
+                        rot(0.375F, 0, 0, 0), rot(0.5F, -30, 0, 0)))
                 .addAnimation("body", rotation(
-                        rot(0.0F, -10, 8, 8), rot(0.125F, -12, 0, 0), rot(0.25F, -10, -8, -8),
-                        rot(0.375F, -12, 0, 0), rot(0.5F, -10, 8, 8)))
+                        rot(0.0F, 12, 5, 0), rot(0.125F, 12, 0, 0), rot(0.25F, 12, -5, 0),
+                        rot(0.375F, 12, 0, 0), rot(0.5F, 12, 5, 0)))
+                .addAnimation("head", rotation(
+                        rot(0.0F, 8, 0, 0), rot(0.5F, 8, 0, 0)))
                 .addAnimation("body", position(
-                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
-                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
+                        pos(0.0F, 0, -0.6F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -0.6F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -0.6F, 0)))
                 .addAnimation("head", position(
-                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
-                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
+                        pos(0.0F, 0, -0.6F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -0.6F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -0.6F, 0)))
                 .addAnimation("left_arm", position(
-                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
-                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
+                        pos(0.0F, 0, -0.6F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -0.6F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -0.6F, 0)))
                 .addAnimation("right_arm", position(
-                        pos(0.0F, 0, -1.5F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -1.5F, 0),
-                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -1.5F, 0)))
+                        pos(0.0F, 0, -0.6F, 0), pos(0.125F, 0, 0, 0), pos(0.25F, 0, -0.6F, 0),
+                        pos(0.375F, 0, 0, 0), pos(0.5F, 0, -0.6F, 0)))
+                .build();
+
+        GUARDIAN_SHAKE_MOSS = AnimationDefinition.Builder.withLength(SHAKE_LENGTH)
+                .addAnimation("body",      shakeRotation(0, 0,   0,  0,  9,  2, 0))
+                .addAnimation("head",      shakeRotation(0, 0,   0,  3,  8,  2, 1))
+                .addAnimation("right_arm", shakeRotation(0, 0,  14, 24,  0,  5, 0))
+                .addAnimation("left_arm",  shakeRotation(0, 0, -14, 24,  0, -5, 1))
                 .build();
     }
 }

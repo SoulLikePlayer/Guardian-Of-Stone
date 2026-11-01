@@ -12,6 +12,7 @@ public class GuardianOfStoneRenderState extends LivingEntityRenderState {
     public final AnimationState attackAnimationState = new AnimationState();
     public final AnimationState actionAnimationState = new AnimationState();
     public final ItemStackRenderState workItem = new ItemStackRenderState();
+    public final AnimationState shakeMossAnimationState = new AnimationState();
 
     public GuardianOfStoneState guardianOfStoneState;
     public GuardianOfStoneType guardianOfStoneType;

@@ -27,6 +27,7 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
     private final KeyframeAnimation walkAnimation;
     private final KeyframeAnimation attackAnimation;
     private final KeyframeAnimation panicAnimation;
+    private final KeyframeAnimation shakeMossAnimation;
 
     private static final float FEAR_INTENSITY = 0.3F;
     private static final float MOSS_SHAKE_INTENSITY = 2.5F;
@@ -39,6 +40,7 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
         this.walkAnimation = GuardianOfStoneAnimation.GUARDIAN_WALKING.bake(root);
         this.attackAnimation = GuardianOfStoneAnimation.GUARDIAN_ATTACK.bake(root);
         this.panicAnimation = GuardianOfStoneAnimation.GUARDIAN_PANIC_RUN.bake(root);
+        this.shakeMossAnimation = GuardianOfStoneAnimation.GUARDIAN_SHAKE_MOSS.bake(root);
 
         this.head = root.getChild("head");
         this.body = root.getChild("body");
@@ -109,6 +111,7 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
         }
 
         this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
+        this.shakeMossAnimation.apply(state.shakeMossAnimationState, state.ageInTicks);
 
         KeyframeAnimation actionAnim = actionAnimations.get(state.action);
         if (actionAnim != null) actionAnim.apply(state.actionAnimationState, state.ageInTicks);
@@ -120,9 +123,7 @@ public class GuardianOfStoneModel extends EntityModel<@NotNull GuardianOfStoneRe
             this.rightArm.zRot = state.pointZRot;
         }
 
-        if (state.shakingMoss) {
-            applyShake(state.ageInTicks, MOSS_SHAKE_INTENSITY);
-        } else if (state.terrified) {
+        if (state.terrified) {
             applyShake(state.ageInTicks, FEAR_INTENSITY);
         }
     }

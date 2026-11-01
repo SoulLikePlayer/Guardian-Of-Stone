@@ -88,6 +88,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
     public final AnimationState attackAnimationState = new AnimationState();
     public final AnimationState actionAnimationState = new AnimationState();
+    public final AnimationState shakeMossAnimationState = new AnimationState();
 
     private int attackAnimationTick;
     private int actionTicks;
@@ -196,7 +197,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
         this.goalSelector.addGoal(0, new GuardianFleeWardenGoal(this));
         this.goalSelector.addGoal(0, new GuardianAvoidSculkGoal(this));
-        this.goalSelector.addGoal(0, new GuardianShakeOffMossGoal(this));
+        this.goalSelector.addGoal(1, new GuardianShakeMossGoal(this));
         this.goalSelector.addGoal(1, new GuardianMeleeAttackGoal(this, 1.0f, true));
         this.goalSelector.addGoal(1, new GuardianUseAbilityGoal(this));
         this.goalSelector.addGoal(2, findOreGoal);
@@ -377,6 +378,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     private void setupAnimationStates() {
         this.attackAnimationState.animateWhen(this.attackAnimationTick > 0, this.tickCount);
         this.actionAnimationState.animateWhen(getAction() != GuardianAction.NONE, this.tickCount);
+        this.shakeMossAnimationState.animateWhen(this.isShakingMoss(), this.tickCount);
     }
 
     /**

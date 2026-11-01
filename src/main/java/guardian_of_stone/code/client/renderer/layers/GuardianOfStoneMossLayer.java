@@ -40,6 +40,6 @@ public class GuardianOfStoneMossLayer extends RenderLayer<@NotNull GuardianOfSto
                        GuardianOfStoneRenderState state, float yRot, float xRot) {
         Identifier texture = TEXTURES.get(state.mossLevel);
         if (texture == null) return;
-        coloredCutoutModelCopyLayerRender(model, texture, poseStack, collector, lightCoords, state, -1, 2);
+        coloredCutoutModelCopyLayerRender(model, texture, poseStack, collector, lightCoords, state, -1, 1);
     }
 }

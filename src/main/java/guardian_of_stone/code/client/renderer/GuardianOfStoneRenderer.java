@@ -53,6 +53,7 @@ public class GuardianOfStoneRenderer <T extends GuardianOfStoneEntity> extends M
 
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.actionAnimationState.copyFrom(entity.actionAnimationState);
+        state.shakeMossAnimationState.copyFrom(entity.shakeMossAnimationState);
         state.action = entity.getAction();
         state.terrified = entity.isTerrified();
         state.guardianOfStoneState = entity.getState();
