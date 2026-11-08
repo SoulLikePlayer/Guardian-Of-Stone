@@ -2,6 +2,7 @@ package guardian_of_stone.code.core;
 
 import guardian_of_stone.code.world.entity.ModEntity;
 import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
+import guardian_of_stone.code.world.sound.ModSounds;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -17,6 +18,8 @@ public class GuardianOfStone {
 
     public GuardianOfStone(IEventBus modEventBus, ModContainer modContainer) {
         ModEntity.ENTITY_TYPES.register(modEventBus);
+        ModSounds.SOUNDS.register(modEventBus);
+
         ModEntityDataSerializers.SERIALIZERS.register(modEventBus);
     }
 }

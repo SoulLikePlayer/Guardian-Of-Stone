@@ -2,9 +2,9 @@ package guardian_of_stone.code.world.entity.guardian.ability;
 
 import guardian_of_stone.code.world.entity.guardian.GuardianAction;
 import guardian_of_stone.code.world.entity.guardian.GuardianOfStoneEntity;
+import guardian_of_stone.code.world.sound.ModSounds;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -67,7 +67,7 @@ public class VillagerLootAbility implements IGuardianAbility {
     public ItemStack finish(GuardianOfStoneEntity guardian, ServerLevel level, ItemStack input) {
         Vec3 p = guardian.getWorkPos();
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, p.x, p.y, p.z, 8, 0.3, 0.3, 0.3, 0.0);
-        guardian.playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.0F);
+        guardian.playSound(ModSounds.GUARDIAN_TRADE.get(), 1.0F, 1.0F);
         return POOL.get(level.getRandom().nextInt(POOL.size())).get();
     }
 }

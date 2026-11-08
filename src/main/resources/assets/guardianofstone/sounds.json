@@ -1,0 +1,68 @@
+{
+  "entity.guardian.hurt": {
+    "sounds": [
+      "guardianofstone:entity/guardian/hurt1",
+      "guardianofstone:entity/guardian/hurt2",
+      "guardianofstone:entity/guardian/hurt3"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.hurt"
+  },
+  "entity.guardian.death": {
+    "sounds": [
+      "guardianofstone:entity/guardian/death"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.death"
+  },
+  "entity.guardian.step": {
+    "sounds": [
+      "guardianofstone:entity/guardian/step1",
+      "guardianofstone:entity/guardian/step2",
+      "guardianofstone:entity/guardian/step3"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.step"
+  },
+  "entity.guardian.attack": {
+    "sounds": [
+      "guardianofstone:entity/guardian/attack1",
+      "guardianofstone:entity/guardian/attack2"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.attack"
+  },
+  "entity.guardian.wake": {
+    "sounds": [
+      "guardianofstone:entity/guardian/wake"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.wake"
+  },
+  "entity.guardian.sleep": {
+    "sounds": [
+      "guardianofstone:entity/guardian/sleep"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.sleep"
+  },
+  "entity.guardian.ambient": {
+    "sounds": [
+      "guardianofstone:entity/guardian/ambient1",
+      "guardianofstone:entity/guardian/ambient2"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.ambient"
+  },
+  "entity.guardian.work": {
+    "sounds": [
+      "guardianofstone:entity/guardian/work"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.work"
+  },
+  "entity.guardian.terrified": {
+    "sounds": [
+      "guardianofstone:entity/guardian/terrified"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.terrified"
+  },
+  "entity.guardian.trade": {
+    "sounds": [
+      "guardianofstone:entity/guardian/trade"
+    ],
+    "subtitle": "subtitles.guardianofstone.guardian.trade"
+  }
+}

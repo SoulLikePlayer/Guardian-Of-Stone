@@ -4,6 +4,7 @@ import guardian_of_stone.code.world.entity.ModEntityDataSerializers;
 import guardian_of_stone.code.world.entity.ai.goal.*;
 import guardian_of_stone.code.world.entity.guardian.ability.IGuardianAbility;
 import guardian_of_stone.code.world.entity.guardian.ability.OverloadAbility;
+import guardian_of_stone.code.world.sound.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -11,6 +12,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
@@ -37,6 +39,7 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
@@ -283,6 +286,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
         }
 
         actionTicks++;
+        if (actionTicks % 24 == 1) this.playSound(ModSounds.GUARDIAN_WORK.get(), 1.0F, 1.0F);
         ability().onActionTick(this, level, actionTicks);
         if (actionTicks >= action.getDurationTicks()) finishAction(level);
     }
@@ -354,6 +358,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     public boolean doHurtTarget(ServerLevel level,
                                 @NotNull Entity target) {
         level.broadcastEntityEvent(this, (byte) 4);
+        this.playSound(ModSounds.GUARDIAN_ATTACK.get(), 1.0F, 0.95F + this.random.nextFloat() * 0.1F);
         boolean hit = super.doHurtTarget(level, target);
         if (hit) ability().onAttack(this, level, target);
         return hit;
@@ -439,7 +444,10 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     public void setState(GuardianOfStoneState state) {
         GuardianOfStoneState old = getState();
         this.entityData.set(STATE, state);
-        if (old != state) ability().onStateChange(this, old, state);
+        if (old != state) {
+            ability().onStateChange(this, old, state);
+            playStateSound(state);
+        }
     }
 
     public GuardianOfStoneState getState() {
@@ -513,7 +521,13 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
     }
 
     public boolean isTerrified() { return this.entityData.get(TERRIFIED); }
-    public void setTerrified(boolean terrified) { this.entityData.set(TERRIFIED, terrified); }
+    public void setTerrified(boolean terrified) {
+        boolean wasTerrified = isTerrified();
+        this.entityData.set(TERRIFIED, terrified);
+        if (terrified && !wasTerrified && !this.level().isClientSide()) {
+            this.playSound(ModSounds.GUARDIAN_TERRIFIED.get(), 1.0F, 1.0F);
+        }
+    }
 
     public void cancelAction() {
         if (getAction() == GuardianAction.NONE) return;
@@ -575,6 +589,44 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
 
     public boolean isShakingMoss() { return this.entityData.get(SHAKING_MOSS); }
     public void setShakingMoss(boolean shaking) { this.entityData.set(SHAKING_MOSS, shaking); }
+
+    /**
+     * Plays the wake-up or fall-asleep sound. Silent on the client and while the entity is being
+     * loaded from disk (tickCount == 0), so that a saved guardian does not "wake up" on every reload.
+     *
+     * @param state the state the guardian just entered
+     */
+    private void playStateSound(GuardianOfStoneState state) {
+        if (this.level().isClientSide() || this.tickCount == 0) return;
+        if (state == GuardianOfStoneState.AWAKE) {
+            this.playSound(ModSounds.GUARDIAN_WAKE.get(), 1.0F, 1.0F);
+        } else if (state == GuardianOfStoneState.SLEEP) {
+            this.playSound(ModSounds.GUARDIAN_SLEEP.get(), 1.0F, 1.0F);
+        }
+    }
+
+    /**
+     * Ambient rumble, only while the guardian is awake (a sleeping statue stays silent).
+     */
+    @Override
+    protected @Nullable SoundEvent getAmbientSound() {
+        return getState() == GuardianOfStoneState.AWAKE ? ModSounds.GUARDIAN_AMBIENT.get() : null;
+    }
+
+    @Override
+    protected @NotNull SoundEvent getHurtSound(@NotNull DamageSource source) {
+        return ModSounds.GUARDIAN_HURT.get();
+    }
+
+    @Override
+    protected @NotNull SoundEvent getDeathSound() {
+        return ModSounds.GUARDIAN_DEATH.get();
+    }
+
+    @Override
+    protected void playStepSound(@NotNull BlockPos pos, @NotNull BlockState state) {
+        this.playSound(ModSounds.GUARDIAN_STEP.get(), 1.0F, 0.95F + this.random.nextFloat() * 0.1F);
+    }
 
     @Override
     public void remove(@NotNull RemovalReason reason) {
