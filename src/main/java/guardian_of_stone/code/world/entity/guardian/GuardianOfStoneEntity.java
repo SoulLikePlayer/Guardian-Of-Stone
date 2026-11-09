@@ -137,6 +137,7 @@ public class GuardianOfStoneEntity extends AbstractGolem implements NeutralMob {
                                                   @NotNull EntitySpawnReason spawnReason,
                                                   @Nullable SpawnGroupData groupData) {
         setGuardianType(GuardianOfStoneType.getRandomized(level.getRandom()));
+
         return super.finalizeSpawn(level, difficulty, spawnReason, groupData);
     }
 

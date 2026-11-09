@@ -14,5 +14,5 @@ public class ModEntity {
             DeferredRegister.createEntities(GuardianOfStone.MODID);
 
     public static final Supplier<EntityType<@NotNull GuardianOfStoneEntity>> GUARDIAN_OF_STONE =
-            ENTITY_TYPES.registerEntityType("guardian_of_stone", GuardianOfStoneEntity::new, MobCategory.CREATURE);
+            ENTITY_TYPES.registerEntityType("guardian_of_stone", GuardianOfStoneEntity::new, MobCategory.MONSTER);
 }
