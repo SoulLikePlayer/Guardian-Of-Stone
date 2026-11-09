@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "guardianofstone:item/guardian_of_stone_spawn_egg"
+  }
+}
